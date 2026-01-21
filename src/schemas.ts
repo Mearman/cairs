@@ -1,9 +1,28 @@
 // CAIRS JSON Schemas
-// JSON Schema definitions for AIR and CIR documents
+// JSON Schema definitions for AIR, CIR, EIR, and LIR documents
 
 //==============================================================================
 // Type Schema Components
 //==============================================================================
+
+const voidTypeSchema = {
+	type: "object",
+	required: ["kind"],
+	properties: {
+		kind: { const: "void" },
+	},
+	additionalProperties: false,
+};
+
+const refTypeSchema = {
+	type: "object",
+	required: ["kind", "of"],
+	properties: {
+		kind: { const: "ref" },
+		of: { $ref: "#/definitions/type" },
+	},
+	additionalProperties: false,
+};
 
 const boolTypeSchema = {
 	type: "object",
@@ -108,6 +127,8 @@ const fnTypeSchema = {
 
 const typeSchema = {
 	oneOf: [
+		voidTypeSchema,
+		refTypeSchema,
 		boolTypeSchema,
 		intTypeSchema,
 		floatTypeSchema,
@@ -460,5 +481,393 @@ export function isAIRSchema(obj: unknown): obj is Record<string, unknown> {
 }
 
 export function isCIRSchema(obj: unknown): obj is Record<string, unknown> {
+	return typeof obj === "object" && obj !== null && "$schema" in obj;
+}
+
+//==============================================================================
+// EIR Expression Schemas
+//==============================================================================
+
+const seqExprSchema = {
+	type: "object",
+	required: ["kind", "first", "then"],
+	properties: {
+		kind: { const: "seq" },
+		first: { type: "string", pattern: "^[a-zA-Z_][a-zA-Z0-9_]*$" },
+		then: { type: "string", pattern: "^[a-zA-Z_][a-zA-Z0-9_]*$" },
+	},
+	additionalProperties: false,
+};
+
+const assignExprSchema = {
+	type: "object",
+	required: ["kind", "target", "value"],
+	properties: {
+		kind: { const: "assign" },
+		target: { type: "string", pattern: "^[a-zA-Z_][a-zA-Z0-9_]*$" },
+		value: { type: "string", pattern: "^[a-zA-Z_][a-zA-Z0-9_]*$" },
+	},
+	additionalProperties: false,
+};
+
+const whileExprSchema = {
+	type: "object",
+	required: ["kind", "cond", "body"],
+	properties: {
+		kind: { const: "while" },
+		cond: { type: "string", pattern: "^[a-zA-Z_][a-zA-Z0-9_]*$" },
+		body: { type: "string", pattern: "^[a-zA-Z_][a-zA-Z0-9_]*$" },
+	},
+	additionalProperties: false,
+};
+
+const forExprSchema = {
+	type: "object",
+	required: ["kind", "var", "init", "cond", "update", "body"],
+	properties: {
+		kind: { const: "for" },
+		var: { type: "string", pattern: "^[a-zA-Z_][a-zA-Z0-9_]*$" },
+		init: { type: "string", pattern: "^[a-zA-Z_][a-zA-Z0-9_]*$" },
+		cond: { type: "string", pattern: "^[a-zA-Z_][a-zA-Z0-9_]*$" },
+		update: { type: "string", pattern: "^[a-zA-Z_][a-zA-Z0-9_]*$" },
+		body: { type: "string", pattern: "^[a-zA-Z_][a-zA-Z0-9_]*$" },
+	},
+	additionalProperties: false,
+};
+
+const iterExprSchema = {
+	type: "object",
+	required: ["kind", "var", "iter", "body"],
+	properties: {
+		kind: { const: "iter" },
+		var: { type: "string", pattern: "^[a-zA-Z_][a-zA-Z0-9_]*$" },
+		iter: { type: "string", pattern: "^[a-zA-Z_][a-zA-Z0-9_]*$" },
+		body: { type: "string", pattern: "^[a-zA-Z_][a-zA-Z0-9_]*$" },
+	},
+	additionalProperties: false,
+};
+
+const effectExprSchema = {
+	type: "object",
+	required: ["kind", "op", "args"],
+	properties: {
+		kind: { const: "effect" },
+		op: { type: "string", pattern: "^[a-zA-Z_][a-zA-Z0-9_]*$" },
+		args: {
+			type: "array",
+			items: { type: "string", pattern: "^[a-zA-Z_][a-zA-Z0-9_]*$" },
+		},
+	},
+	additionalProperties: false,
+};
+
+const refCellExprSchema = {
+	type: "object",
+	required: ["kind", "target"],
+	properties: {
+		kind: { const: "refCell" },
+		target: { type: "string", pattern: "^[a-zA-Z_][a-zA-Z0-9_]*$" },
+	},
+	additionalProperties: false,
+};
+
+const derefExprSchema = {
+	type: "object",
+	required: ["kind", "target"],
+	properties: {
+		kind: { const: "deref" },
+		target: { type: "string", pattern: "^[a-zA-Z_][a-zA-Z0-9_]*$" },
+	},
+	additionalProperties: false,
+};
+
+const eirExprSchema = {
+	oneOf: [
+		litExprSchema,
+		refExprSchema,
+		varExprSchema,
+		callExprSchema,
+		ifExprSchema,
+		letExprSchema,
+		airRefExprSchema,
+		predicateExprSchema,
+		lambdaExprSchema,
+		callFnExprSchema,
+		fixExprSchema,
+		seqExprSchema,
+		assignExprSchema,
+		whileExprSchema,
+		forExprSchema,
+		iterExprSchema,
+		effectExprSchema,
+		refCellExprSchema,
+		derefExprSchema,
+	],
+};
+
+//==============================================================================
+// LIR Schemas
+//==============================================================================
+
+const lirInsAssignSchema = {
+	type: "object",
+	required: ["kind", "target", "value"],
+	properties: {
+		kind: { const: "assign" },
+		target: { type: "string", pattern: "^[a-zA-Z_][a-zA-Z0-9_]*$" },
+		value: { $ref: "#/definitions/expr" },
+	},
+	additionalProperties: false,
+};
+
+const lirInsCallSchema = {
+	type: "object",
+	required: ["kind", "target", "callee", "args"],
+	properties: {
+		kind: { const: "call" },
+		target: { type: "string", pattern: "^[a-zA-Z_][a-zA-Z0-9_]*$" },
+		callee: { type: "string", pattern: "^[a-zA-Z_][a-zA-Z0-9_]*$" },
+		args: {
+			type: "array",
+			items: { type: "string", pattern: "^[a-zA-Z_][a-zA-Z0-9_]*$" },
+		},
+	},
+	additionalProperties: false,
+};
+
+const lirInsOpSchema = {
+	type: "object",
+	required: ["kind", "target", "ns", "name", "args"],
+	properties: {
+		kind: { const: "op" },
+		target: { type: "string", pattern: "^[a-zA-Z_][a-zA-Z0-9_]*$" },
+		ns: { type: "string", pattern: "^[a-zA-Z_][a-zA-Z0-9_]*$" },
+		name: { type: "string", pattern: "^[a-zA-Z_][a-zA-Z0-9_]*$" },
+		args: {
+			type: "array",
+			items: { type: "string", pattern: "^[a-zA-Z_][a-zA-Z0-9_]*$" },
+		},
+	},
+	additionalProperties: false,
+};
+
+const lirInsPhiSchema = {
+	type: "object",
+	required: ["kind", "target", "sources"],
+	properties: {
+		kind: { const: "phi" },
+		target: { type: "string", pattern: "^[a-zA-Z_][a-zA-Z0-9_]*$" },
+		sources: {
+			type: "array",
+			items: {
+				type: "object",
+				required: ["block", "id"],
+				properties: {
+					block: { type: "string", pattern: "^[a-zA-Z_][a-zA-Z0-9_]*$" },
+					id: { type: "string", pattern: "^[a-zA-Z_][a-zA-Z0-9_]*$" },
+				},
+				additionalProperties: false,
+			},
+		},
+	},
+	additionalProperties: false,
+};
+
+const lirInsEffectSchema = {
+	type: "object",
+	required: ["kind", "op", "args"],
+	properties: {
+		kind: { const: "effect" },
+		op: { type: "string", pattern: "^[a-zA-Z_][a-zA-Z0-9_]*$" },
+		args: {
+			type: "array",
+			items: { type: "string", pattern: "^[a-zA-Z_][a-zA-Z0-9_]*$" },
+		},
+	},
+	additionalProperties: false,
+};
+
+const lirInsAssignRefSchema = {
+	type: "object",
+	required: ["kind", "target", "value"],
+	properties: {
+		kind: { const: "assignRef" },
+		target: { type: "string", pattern: "^[a-zA-Z_][a-zA-Z0-9_]*$" },
+		value: { type: "string", pattern: "^[a-zA-Z_][a-zA-Z0-9_]*$" },
+	},
+	additionalProperties: false,
+};
+
+const lirInstructionSchema = {
+	oneOf: [
+		lirInsAssignSchema,
+		lirInsCallSchema,
+		lirInsOpSchema,
+		lirInsPhiSchema,
+		lirInsEffectSchema,
+		lirInsAssignRefSchema,
+	],
+};
+
+const lirTermJumpSchema = {
+	type: "object",
+	required: ["kind", "to"],
+	properties: {
+		kind: { const: "jump" },
+		to: { type: "string", pattern: "^[a-zA-Z_][a-zA-Z0-9_]*$" },
+	},
+	additionalProperties: false,
+};
+
+const lirTermBranchSchema = {
+	type: "object",
+	required: ["kind", "cond", "then", "else"],
+	properties: {
+		kind: { const: "branch" },
+		cond: { type: "string", pattern: "^[a-zA-Z_][a-zA-Z0-9_]*$" },
+		then: { type: "string", pattern: "^[a-zA-Z_][a-zA-Z0-9_]*$" },
+		else: { type: "string", pattern: "^[a-zA-Z_][a-zA-Z0-9_]*$" },
+	},
+	additionalProperties: false,
+};
+
+const lirTermReturnSchema = {
+	type: "object",
+	required: ["kind"],
+	properties: {
+		kind: { const: "return" },
+		value: { type: "string", pattern: "^[a-zA-Z_][a-zA-Z0-9_]*$" },
+	},
+	additionalProperties: false,
+};
+
+const lirTermExitSchema = {
+	type: "object",
+	required: ["kind"],
+	properties: {
+		kind: { const: "exit" },
+		code: { type: "string", pattern: "^[a-zA-Z_][a-zA-Z0-9_]*$" },
+	},
+	additionalProperties: false,
+};
+
+const lirTerminatorSchema = {
+	oneOf: [
+		lirTermJumpSchema,
+		lirTermBranchSchema,
+		lirTermReturnSchema,
+		lirTermExitSchema,
+	],
+};
+
+const lirBlockSchema = {
+	type: "object",
+	required: ["id", "instructions", "terminator"],
+	properties: {
+		id: { type: "string", pattern: "^[a-zA-Z_][a-zA-Z0-9_]*$" },
+		instructions: {
+			type: "array",
+			items: lirInstructionSchema,
+		},
+		terminator: lirTerminatorSchema,
+	},
+	additionalProperties: false,
+};
+
+//==============================================================================
+// EIR and LIR Document Schemas
+//==============================================================================
+
+export const eirSchema = {
+	$schema: "http://json-schema.org/draft-07/schema#",
+	title: "EIR Document",
+	type: "object",
+	required: ["version", "nodes", "result", "airDefs"],
+	properties: {
+		version: {
+			type: "string",
+			pattern: "^\\d+\\.\\d+\\.\\d+(-[a-zA-Z0-9.]+)?$",
+			description: "Semantic version",
+		},
+		capabilities: {
+			type: "array",
+			items: { type: "string" },
+			description: "Optional capability declarations",
+		},
+		functionSigs: {
+			type: "array",
+			items: { $ref: "#/definitions/functionSig" },
+			description: "Operator signatures",
+		},
+		airDefs: {
+			type: "array",
+			items: { $ref: "#/definitions/airDef" },
+			description: "AIR definitions",
+		},
+		nodes: {
+			type: "array",
+			items: {
+				type: "object",
+				required: ["id", "expr"],
+				properties: {
+					id: { type: "string", pattern: "^[a-zA-Z_][a-zA-Z0-9_]*$" },
+					expr: eirExprSchema,
+				},
+				additionalProperties: false,
+			},
+			description: "Expression nodes (includes EIR expressions)",
+		},
+		result: {
+			type: "string",
+			pattern: "^[a-zA-Z_][a-zA-Z0-9_]*$",
+			description: "Reference to result node",
+		},
+	},
+	additionalProperties: false,
+	definitions: {
+		...definitions,
+		expr: eirExprSchema,
+	},
+};
+
+export const lirSchema = {
+	$schema: "http://json-schema.org/draft-07/schema#",
+	title: "LIR Document",
+	type: "object",
+	required: ["version", "blocks", "entry"],
+	properties: {
+		version: {
+			type: "string",
+			pattern: "^\\d+\\.\\d+\\.\\d+(-[a-zA-Z0-9.]+)?$",
+			description: "Semantic version",
+		},
+		capabilities: {
+			type: "array",
+			items: { type: "string" },
+			description: "Optional capability declarations",
+		},
+		blocks: {
+			type: "array",
+			items: lirBlockSchema,
+			description: "CFG basic blocks",
+		},
+		entry: {
+			type: "string",
+			pattern: "^[a-zA-Z_][a-zA-Z0-9_]*$",
+			description: "Entry block id",
+		},
+	},
+	additionalProperties: false,
+};
+
+//==============================================================================
+// Schema Type Guards
+//==============================================================================
+
+export function isEIRSchema(obj: unknown): obj is Record<string, unknown> {
+	return typeof obj === "object" && obj !== null && "$schema" in obj;
+}
+
+export function isLIRSchema(obj: unknown): obj is Record<string, unknown> {
 	return typeof obj === "object" && obj !== null && "$schema" in obj;
 }
