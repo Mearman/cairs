@@ -1,0 +1,111 @@
+{
+  "version": "1.0.0",
+  "description": "Demonstrates loop-carried variables using phi nodes in LIR. The phi node merges the initial value and the updated value from each loop iteration.",
+  "blocks": [
+    {
+      "id": "entry",
+      "instructions": [
+        {
+          "kind": "assign",
+          "target": "initialSum",
+          "value": { "kind": "lit", "type": { "kind": "int" }, "value": 0 }
+        },
+        {
+          "kind": "assign",
+          "target": "initialI",
+          "value": { "kind": "lit", "type": { "kind": "int" }, "value": 0 }
+        }
+      ],
+      "terminator": {
+        "kind": "jump",
+        "to": "loopHeader"
+      }
+    },
+    {
+      "id": "loopHeader",
+      "instructions": [
+        {
+          "kind": "phi",
+          "target": "i",
+          "sources": [
+            { "block": "entry", "id": "initialI" },
+            { "block": "loopBody", "id": "nextI" }
+          ]
+        },
+        {
+          "kind": "phi",
+          "target": "sum",
+          "sources": [
+            { "block": "entry", "id": "initialSum" },
+            { "block": "loopBody", "id": "updatedSum" }
+          ]
+        },
+        {
+          "kind": "assign",
+          "target": "limit",
+          "value": { "kind": "lit", "type": { "kind": "int" }, "value": 5 }
+        },
+        {
+          "kind": "op",
+          "target": "condition",
+          "ns": "core",
+          "name": "lt",
+          "args": ["i", "limit"]
+        }
+      ],
+      "terminator": {
+        "kind": "branch",
+        "cond": "condition",
+        "then": "loopBody",
+        "else": "loopExit"
+      }
+    },
+    {
+      "id": "loopBody",
+      "instructions": [
+        {
+          "kind": "assign",
+          "target": "one",
+          "value": { "kind": "lit", "type": { "kind": "int" }, "value": 1 }
+        },
+        {
+          "kind": "op",
+          "target": "updatedSum",
+          "ns": "core",
+          "name": "add",
+          "args": ["sum", "i"]
+        },
+        {
+          "kind": "op",
+          "target": "nextI",
+          "ns": "core",
+          "name": "add",
+          "args": ["i", "one"]
+        }
+      ],
+      "terminator": {
+        "kind": "jump",
+        "to": "loopHeader"
+      }
+    },
+    {
+      "id": "loopExit",
+      "instructions": [
+        {
+          "kind": "phi",
+          "target": "finalSum",
+          "sources": [
+            { "block": "loopHeader", "id": "sum" }
+          ]
+        }
+      ],
+      "terminator": {
+        "kind": "return",
+        "value": "finalSum"
+      }
+    }
+  ],
+  "entry": "entry",
+  "expected_result": 10,
+  "note": "Loop-carried variables: i and sum are phi nodes in loopHeader. i goes 0->1->2->3->4->5, sum accumulates 0+1+2+3+4=10."
+}

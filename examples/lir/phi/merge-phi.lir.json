@@ -1,0 +1,89 @@
+{
+  "version": "1.0.0",
+  "description": "Demonstrates SSA phi node for merging values from different control flow paths. The phi instruction selects the correct value based on which predecessor was executed.",
+  "blocks": [
+    {
+      "id": "entry",
+      "instructions": [
+        {
+          "kind": "assign",
+          "target": "mode",
+          "value": { "kind": "lit", "type": { "kind": "int" }, "value": 1 }
+        },
+        {
+          "kind": "assign",
+          "target": "threshold",
+          "value": { "kind": "lit", "type": { "kind": "int" }, "value": 1 }
+        },
+        {
+          "kind": "op",
+          "target": "condition",
+          "ns": "core",
+          "name": "eq",
+          "args": ["mode", "threshold"]
+        }
+      ],
+      "terminator": {
+        "kind": "branch",
+        "cond": "condition",
+        "then": "pathA",
+        "else": "pathB"
+      }
+    },
+    {
+      "id": "pathA",
+      "instructions": [
+        {
+          "kind": "assign",
+          "target": "value",
+          "value": { "kind": "lit", "type": { "kind": "int" }, "value": 100 }
+        }
+      ],
+      "terminator": {
+        "kind": "jump",
+        "to": "merge"
+      }
+    },
+    {
+      "id": "pathB",
+      "instructions": [
+        {
+          "kind": "assign",
+          "target": "value",
+          "value": { "kind": "lit", "type": { "kind": "int" }, "value": 200 }
+        }
+      ],
+      "terminator": {
+        "kind": "jump",
+        "to": "merge"
+      }
+    },
+    {
+      "id": "merge",
+      "instructions": [
+        {
+          "kind": "phi",
+          "target": "mergedValue",
+          "sources": [
+            { "block": "pathA", "id": "value" },
+            { "block": "pathB", "id": "value" }
+          ]
+        },
+        {
+          "kind": "op",
+          "target": "doubled",
+          "ns": "core",
+          "name": "add",
+          "args": ["mergedValue", "mergedValue"]
+        }
+      ],
+      "terminator": {
+        "kind": "return",
+        "value": "doubled"
+      }
+    }
+  ],
+  "entry": "entry",
+  "expected_result": 200,
+  "note": "Phi node merges value from pathA (100) or pathB (200). With mode=1, takes pathA, merges 100, doubles to 200."
+}
