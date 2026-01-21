@@ -12,15 +12,22 @@ import assert from "node:assert";
 import {
   validateAIR,
   validateCIR,
+  validateEIR,
+  validateLIR,
   createCoreRegistry,
   createBoolRegistry,
   createListRegistry,
   createSetRegistry,
   evaluateProgram,
+  evaluateEIR,
+  evaluateLIR,
   typeCheckProgram,
   registerDef,
+  defaultEffectRegistry,
   type AIRDocument,
   type CIRDocument,
+  type EIRDocument,
+  type LIRDocument,
   type Defs,
 } from "../src/index.js";
 
@@ -30,7 +37,7 @@ const EXAMPLES_DIR = __dirname;
 interface ExampleFile {
   path: string;
   fullPath: string;
-  ir: "AIR" | "CIR";
+  ir: "AIR" | "CIR" | "EIR" | "LIR";
 }
 
 async function findExampleFiles(dir: string, baseDir = dir): Promise<ExampleFile[]> {
@@ -56,20 +63,36 @@ async function findExampleFiles(dir: string, baseDir = dir): Promise<ExampleFile
         fullPath,
         ir: "CIR",
       });
+    } else if (entry.endsWith(".eir.json")) {
+      examples.push({
+        path: relative(baseDir, fullPath),
+        fullPath,
+        ir: "EIR",
+      });
+    } else if (entry.endsWith(".lir.json")) {
+      examples.push({
+        path: relative(baseDir, fullPath),
+        fullPath,
+        ir: "LIR",
+      });
     }
   }
 
   return examples;
 }
 
-async function loadExample(filePath: string): Promise<{ doc: AIRDocument | CIRDocument; ir: "AIR" | "CIR" }> {
+async function loadExample(filePath: string): Promise<{ doc: AIRDocument | CIRDocument | EIRDocument | LIRDocument; ir: "AIR" | "CIR" | "EIR" | "LIR" }> {
   const content = await readFile(filePath, "utf-8");
-  const doc = JSON.parse(content) as AIRDocument | CIRDocument;
-  const ir: "AIR" | "CIR" = filePath.endsWith(".cir.json") ? "CIR" : "AIR";
+  const doc = JSON.parse(content) as AIRDocument | CIRDocument | EIRDocument | LIRDocument;
+  let ir: "AIR" | "CIR" | "EIR" | "LIR";
+  if (filePath.endsWith(".cir.json")) ir = "CIR";
+  else if (filePath.endsWith(".eir.json")) ir = "EIR";
+  else if (filePath.endsWith(".lir.json")) ir = "LIR";
+  else ir = "AIR";
   return { doc, ir };
 }
 
-function buildDefs(doc: AIRDocument | CIRDocument): Defs {
+function buildDefs(doc: AIRDocument | CIRDocument | EIRDocument): Defs {
   let defs: Defs = new Map();
   if (doc.airDefs) {
     for (const airDef of doc.airDefs) {
@@ -106,27 +129,52 @@ async function runExampleTests() {
           const { doc, ir } = await loadExample(example.fullPath);
 
           // Test 1: Validation
-          const validationResult = ir === "AIR" ? validateAIR(doc) : validateCIR(doc);
+          let validationResult;
+          if (ir === "AIR") {
+            validationResult = validateAIR(doc as AIRDocument);
+          } else if (ir === "CIR") {
+            validationResult = validateCIR(doc as CIRDocument);
+          } else if (ir === "EIR") {
+            validationResult = validateEIR(doc as EIRDocument);
+          } else {
+            validationResult = validateLIR(doc as LIRDocument);
+          }
           assert.ok(
             validationResult.valid,
             `Validation failed: ${validationResult.errors.map((e) => e.message).join(", ")}`
           );
 
-          // Test 2: Type checking
-          const defs = buildDefs(doc);
-          const typeCheckResult = typeCheckProgram(doc, registry, defs);
-          assert.ok(typeCheckResult, "Type checking should complete");
+          // Test 2: Type checking (skip for LIR and EIR - type checker not yet updated for EIR)
+          if (ir === "AIR" || ir === "CIR") {
+            const defs = buildDefs(doc as AIRDocument | CIRDocument);
+            const typeCheckResult = typeCheckProgram(doc as AIRDocument | CIRDocument, registry, defs);
+            assert.ok(typeCheckResult, "Type checking should complete");
+          }
 
           // Test 3: Evaluation
-          const evalResult = evaluateProgram(doc, registry, defs);
+          let evalResult;
+          if (ir === "EIR") {
+            const defs = buildDefs(doc as EIRDocument);
+            const eirResult = evaluateEIR(doc as EIRDocument, registry, defs, undefined, { effects: defaultEffectRegistry });
+            evalResult = eirResult.result;
+          } else if (ir === "LIR") {
+            const lirResult = evaluateLIR(doc as LIRDocument, registry, defaultEffectRegistry);
+            evalResult = lirResult.result;
+          } else {
+            const defs = buildDefs(doc as AIRDocument | CIRDocument);
+            evalResult = evaluateProgram(doc as AIRDocument | CIRDocument, registry, defs);
+          }
+
           if (evalResult.kind === "error") {
-            assert.fail(`Evaluation should not error: ${evalResult.code}`);
+            assert.fail(`Evaluation should not error: ${evalResult.code} - ${evalResult.message || ""}`);
           }
 
           // Check expected result if present
           const expected = (doc as any).expected_result;
           if (expected !== undefined) {
             if (evalResult.kind === "int" || evalResult.kind === "float" || evalResult.kind === "bool") {
+              assert.strictEqual(evalResult.value, expected, `Result should match expected value`);
+            } else if (evalResult.kind === "string") {
               assert.strictEqual(evalResult.value, expected, `Result should match expected value`);
             }
           }
