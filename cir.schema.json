@@ -1,0 +1,143 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$id": "https://raw.githubusercontent.com/Mearman/cairs/refs/heads/main/cir.schema.json",
+	"title": "CIR (Computational IR)",
+	"allOf": [
+		{
+			"$ref": "https://raw.githubusercontent.com/Mearman/cairs/refs/heads/main/air.schema.json"
+		},
+		{
+			"type": "object",
+			"additionalProperties": false,
+			"properties": {
+				"capabilities": {
+					"type": "array",
+					"items": {
+						"type": "string"
+					}
+				}
+			}
+		}
+	],
+	"$defs": {
+		"id": {
+			"type": "string",
+			"pattern": "^[A-Za-z][A-Za-z0-9_\\-]*$"
+		},
+		"node": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["id", "type", "expr"],
+			"properties": {
+				"id": {
+					"$ref": "#/$defs/id"
+				},
+				"type": {
+					"$ref": "https://raw.githubusercontent.com/Mearman/cairs/refs/heads/main/air.schema.json#/$defs/type"
+				},
+				"expr": {
+					"$ref": "#/$defs/exprCir"
+				}
+			}
+		},
+		"param": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["name", "type"],
+			"properties": {
+				"name": {
+					"$ref": "#/$defs/id"
+				},
+				"type": {
+					"$ref": "https://raw.githubusercontent.com/Mearman/cairs/refs/heads/main/air.schema.json#/$defs/type"
+				}
+			}
+		},
+		"exprCir": {
+			"oneOf": [
+				{
+					"$ref": "https://raw.githubusercontent.com/Mearman/cairs/refs/heads/main/air.schema.json#/$defs/exprAir"
+				},
+				{
+					"$ref": "#/$defs/expr_lambda"
+				},
+				{
+					"$ref": "#/$defs/expr_callExpr"
+				},
+				{
+					"$ref": "#/$defs/expr_fix"
+				}
+			]
+		},
+		"type_fn": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["kind", "params", "returns"],
+			"properties": {
+				"kind": {
+					"const": "fn"
+				},
+				"params": {
+					"type": "array",
+					"items": {
+						"$ref": "https://raw.githubusercontent.com/Mearman/cairs/refs/heads/main/air.schema.json#/$defs/type"
+					}
+				},
+				"returns": {
+					"$ref": "https://raw.githubusercontent.com/Mearman/cairs/refs/heads/main/air.schema.json#/$defs/type"
+				}
+			}
+		},
+		"expr_lambda": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["kind", "params", "body"],
+			"properties": {
+				"kind": {
+					"const": "lambda"
+				},
+				"params": {
+					"type": "array",
+					"items": {
+						"$ref": "#/$defs/param"
+					}
+				},
+				"body": {
+					"$ref": "#/$defs/exprCir"
+				}
+			}
+		},
+		"expr_callExpr": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["kind", "callee", "args"],
+			"properties": {
+				"kind": {
+					"const": "callExpr"
+				},
+				"callee": {
+					"$ref": "#/$defs/exprCir"
+				},
+				"args": {
+					"type": "array",
+					"items": {
+						"$ref": "#/$defs/exprCir"
+					}
+				}
+			}
+		},
+		"expr_fix": {
+			"type": "object",
+			"additionalProperties": false,
+			"required": ["kind", "fn"],
+			"properties": {
+				"kind": {
+					"const": "fix"
+				},
+				"fn": {
+					"$ref": "#/$defs/exprCir"
+				}
+			}
+		}
+	}
+}
