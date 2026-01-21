@@ -1,0 +1,226 @@
+{
+  "version": "1.0.0",
+  "description": "Finds minimum and maximum values from a list using phi nodes for merging comparisons.",
+  "blocks": [
+    {
+      "id": "entry",
+      "instructions": [
+        {
+          "kind": "assign",
+          "target": "firstVal",
+          "value": { "kind": "lit", "type": { "kind": "int" }, "value": 5 }
+        },
+        {
+          "kind": "assign",
+          "target": "initMin",
+          "value": { "kind": "var", "name": "firstVal" }
+        },
+        {
+          "kind": "assign",
+          "target": "initMax",
+          "value": { "kind": "var", "name": "firstVal" }
+        },
+        {
+          "kind": "assign",
+          "target": "initI",
+          "value": { "kind": "lit", "type": { "kind": "int" }, "value": 1 }
+        }
+      ],
+      "terminator": {
+        "kind": "jump",
+        "to": "loopHeader"
+      }
+    },
+    {
+      "id": "loopHeader",
+      "instructions": [
+        {
+          "kind": "phi",
+          "target": "i",
+          "sources": [
+            { "block": "entry", "id": "initI" },
+            { "block": "afterCompare", "id": "nextI" }
+          ]
+        },
+        {
+          "kind": "phi",
+          "target": "minVal",
+          "sources": [
+            { "block": "entry", "id": "initMin" },
+            { "block": "updateMin", "id": "newMin" },
+            { "block": "updateMax", "id": "minVal" }
+          ]
+        },
+        {
+          "kind": "phi",
+          "target": "maxVal",
+          "sources": [
+            { "block": "entry", "id": "initMax" },
+            { "block": "updateMin", "id": "maxVal" },
+            { "block": "updateMax", "id": "newMax" }
+          ]
+        },
+        {
+          "kind": "assign",
+          "target": "limit",
+          "value": { "kind": "lit", "type": { "kind": "int" }, "value": 4 }
+        },
+        {
+          "kind": "op",
+          "target": "shouldContinue",
+          "ns": "core",
+          "name": "lt",
+          "args": ["i", "limit"]
+        }
+      ],
+      "terminator": {
+        "kind": "branch",
+        "cond": "shouldContinue",
+        "then": "getValue",
+        "else": "exit"
+      }
+    },
+    {
+      "id": "getValue",
+      "instructions": [
+        {
+          "kind": "assign",
+          "target": "current",
+          "value": { "kind": "lit", "type": { "kind": "int" }, "value": 3 }
+        }
+      ],
+      "terminator": {
+        "kind": "jump",
+        "to": "checkMin"
+      }
+    },
+    {
+      "id": "checkMin",
+      "instructions": [
+        {
+          "kind": "op",
+          "target": "isLess",
+          "ns": "core",
+          "name": "lt",
+          "args": ["current", "minVal"]
+        }
+      ],
+      "terminator": {
+        "kind": "branch",
+        "cond": "isLess",
+        "then": "updateMin",
+        "else": "checkMax"
+      }
+    },
+    {
+      "id": "updateMin",
+      "instructions": [
+        {
+          "kind": "assign",
+          "target": "newMin",
+          "value": { "kind": "var", "name": "current" }
+        },
+        {
+          "kind": "assign",
+          "target": "one",
+          "value": { "kind": "lit", "type": { "kind": "int" }, "value": 1 }
+        },
+        {
+          "kind": "op",
+          "target": "nextI",
+          "ns": "core",
+          "name": "add",
+          "args": ["i", "one"]
+        }
+      ],
+      "terminator": {
+        "kind": "jump",
+        "to": "loopHeader"
+      }
+    },
+    {
+      "id": "checkMax",
+      "instructions": [
+        {
+          "kind": "op",
+          "target": "isGreater",
+          "ns": "core",
+          "name": "gt",
+          "args": ["current", "maxVal"]
+        }
+      ],
+      "terminator": {
+        "kind": "branch",
+        "cond": "isGreater",
+        "then": "updateMax",
+        "else": "afterCompare"
+      }
+    },
+    {
+      "id": "updateMax",
+      "instructions": [
+        {
+          "kind": "assign",
+          "target": "newMax",
+          "value": { "kind": "var", "name": "current" }
+        },
+        {
+          "kind": "assign",
+          "target": "one",
+          "value": { "kind": "lit", "type": { "kind": "int" }, "value": 1 }
+        },
+        {
+          "kind": "op",
+          "target": "nextI",
+          "ns": "core",
+          "name": "add",
+          "args": ["i", "one"]
+        }
+      ],
+      "terminator": {
+        "kind": "jump",
+        "to": "loopHeader"
+      }
+    },
+    {
+      "id": "afterCompare",
+      "instructions": [
+        {
+          "kind": "assign",
+          "target": "one",
+          "value": { "kind": "lit", "type": { "kind": "int" }, "value": 1 }
+        },
+        {
+          "kind": "op",
+          "target": "nextI",
+          "ns": "core",
+          "name": "add",
+          "args": ["i", "one"]
+        }
+      ],
+      "terminator": {
+        "kind": "jump",
+        "to": "loopHeader"
+      }
+    },
+    {
+      "id": "exit",
+      "instructions": [
+        {
+          "kind": "phi",
+          "target": "finalMax",
+          "sources": [
+            { "block": "loopHeader", "id": "maxVal" }
+          ]
+        }
+      ],
+      "terminator": {
+        "kind": "return",
+        "value": "finalMax"
+      }
+    }
+  ],
+  "entry": "entry",
+  "expected_result": 5,
+  "note": "Finds min and max. With values [5,3], min=3, max=5. Returns max=5."
+}
