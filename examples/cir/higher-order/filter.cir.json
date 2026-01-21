@@ -1,0 +1,236 @@
+{
+  "description": "Filter a list to keep only even numbers: [1, 2, 3, 4, 5] => [2, 4]",
+  "input": {
+    "numbers": {
+      "kind": "list",
+      "elements": [
+        { "kind": "int", "value": "1" },
+        { "kind": "int", "value": "2" },
+        { "kind": "int", "value": "3" },
+        { "kind": "int", "value": "4" },
+        { "kind": "int", "value": "5" }
+      ],
+      "type": {
+        "kind": "list",
+        "elementType": { "kind": "int" }
+      }
+    }
+  },
+  "expression": {
+    "kind": "apply",
+    "callee": {
+      "kind": "lambda",
+      "parameters": [
+        {
+          "name": "isEven",
+          "type": {
+            "kind": "arrow",
+            "parameterType": { "kind": "int" },
+            "returnType": { "kind": "bool" }
+          }
+        }
+      ],
+      "body": {
+        "kind": "apply",
+        "callee": {
+          "kind": "lambda",
+          "parameters": [
+            {
+              "name": "filter",
+              "type": {
+                "kind": "arrow",
+                "parameterType": {
+                  "kind": "arrow",
+                  "parameterType": { "kind": "int" },
+                  "returnType": { "kind": "bool" }
+                },
+                "returnType": {
+                  "kind": "arrow",
+                  "parameterType": {
+                    "kind": "list",
+                    "elementType": { "kind": "int" }
+                  },
+                  "returnType": {
+                    "kind": "list",
+                    "elementType": { "kind": "int" }
+                  }
+                }
+              }
+        }
+      ],
+      "body": {
+        "kind": "apply",
+        "callee": {
+          "kind": "var",
+          "name": "filter"
+        },
+        "arguments": [
+          {
+            "kind": "var",
+            "name": "isEven"
+          },
+          {
+            "kind": "var",
+            "name": "numbers"
+          }
+        ]
+      }
+    },
+    "arguments": [
+      {
+        "kind": "lambda",
+        "parameters": [
+          {
+            "name": "n",
+            "type": { "kind": "int" }
+          }
+        ],
+        "body": {
+          "kind": "apply",
+          "callee": {
+            "kind": "intrinsic",
+            "name": "int.equals"
+          },
+          "arguments": [
+            {
+              "kind": "apply",
+              "callee": {
+                "kind": "intrinsic",
+                "name": "int.mod"
+              },
+              "arguments": [
+                { "kind": "var", "name": "n" },
+                { "kind": "int", "value": "2" }
+              ]
+            },
+            { "kind": "int", "value": "0" }
+          ]
+        }
+      }
+    },
+    {
+      "kind": "lambda",
+      "parameters": [
+        {
+          "name": "predicate",
+          "type": {
+            "kind": "arrow",
+            "parameterType": { "kind": "int" },
+            "returnType": { "kind": "bool" }
+          }
+        },
+        {
+          "name": "xs",
+          "type": {
+            "kind": "list",
+            "elementType": { "kind": "int" }
+          }
+        }
+      ],
+      "body": {
+        "kind": "if",
+        "condition": {
+          "kind": "apply",
+          "callee": {
+            "kind": "intrinsic",
+            "name": "int.equals"
+          },
+          "arguments": [
+            {
+              "kind": "apply",
+              "callee": {
+                "kind": "intrinsic",
+                "name": "list.length"
+              },
+              "arguments": [
+                { "kind": "var", "name": "xs" }
+              ]
+            },
+            { "kind": "int", "value": "0" }
+          ]
+        },
+        "thenBranch": {
+          "kind": "list",
+          "elements": [],
+          "type": {
+            "kind": "list",
+            "elementType": { "kind": "int" }
+          }
+        },
+        "elseBranch": {
+          "kind": "let",
+          "bindings": [
+            {
+              "name": "head",
+              "value": {
+                "kind": "apply",
+                "callee": {
+                  "kind": "intrinsic",
+                  "name": "list.nth"
+                },
+                "arguments": [
+                  { "kind": "var", "name": "xs" },
+                  { "kind": "int", "value": "0" }
+                ]
+              }
+            },
+            {
+              "name": "tail",
+              "value": {
+                "kind": "apply",
+                "callee": {
+                  "kind": "intrinsic",
+                  "name": "list.slice"
+                },
+                "arguments": [
+                  { "kind": "var", "name": "xs" },
+                  { "kind": "int", "value": "1" }
+                ]
+              }
+            },
+            {
+              "name": "filteredTail",
+              "value": {
+                "kind": "apply",
+                "callee": {
+                  "kind": "var",
+                  "name": "filter"
+                },
+                "arguments": [
+                  { "kind": "var", "name": "predicate" },
+                  { "kind": "var", "name": "tail" }
+                ]
+              }
+            }
+          ],
+          "body": {
+            "kind": "if",
+            "condition": {
+              "kind": "apply",
+              "callee": { "kind": "var", "name": "predicate" },
+              "arguments": [
+                { "kind": "var", "name": "head" }
+              ]
+            },
+            "thenBranch": {
+              "kind": "apply",
+              "callee": {
+                "kind": "intrinsic",
+                "name": "list.cons"
+              },
+              "arguments": [
+                { "kind": "var", "name": "head" },
+                { "kind": "var", "name": "filteredTail" }
+              ]
+            },
+            "elseBranch": {
+              "kind": "var",
+              "name": "filteredTail"
+            }
+          }
+        }
+      }
+    }
+  ]
+  }
+}

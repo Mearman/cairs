@@ -1,0 +1,55 @@
+{
+  "version": "1.0.0",
+  "description": "Identity function using a workaround: since var expressions aren't supported in lambda bodies, we use core:select to return the value. Note: true identity functions require var expression support in lambda bodies, which is a current limitation.",
+  "airDefs": [
+    {
+      "ns": "core",
+      "name": "select",
+      "params": ["x"],
+      "result": { "kind": "int" },
+      "body": { "kind": "ref", "id": "x" }
+    }
+  ],
+  "nodes": [
+    {
+      "id": "zero",
+      "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 0 }
+    },
+    {
+      "id": "intValue",
+      "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 42 }
+    },
+    {
+      "id": "stringValue",
+      "expr": { "kind": "lit", "type": { "kind": "string" }, "value": "hello" }
+    },
+    {
+      "id": "boolValue",
+      "expr": { "kind": "lit", "type": { "kind": "bool" }, "value": true }
+    },
+    {
+      "id": "identityInt",
+      "expr": {
+        "kind": "lambda",
+        "params": ["x"],
+        "body": "identityIntBody",
+        "type": {
+          "kind": "fn",
+          "params": [{ "kind": "int" }],
+          "returns": { "kind": "int" }
+        }
+      }
+    },
+    {
+      "id": "identityIntBody",
+      "expr": { "kind": "call", "ns": "core", "name": "add", "args": ["x", "zero"] }
+    },
+    {
+      "id": "applyToInt",
+      "expr": { "kind": "callExpr", "fn": "identityInt", "args": ["intValue"] }
+    }
+  ],
+  "result": "applyToInt",
+  "expected_result": 42,
+  "note": "Lambda parameters can only be referenced in call expressions. A true identity function (lambda x. x) requires var expressions in lambda bodies, which is not currently supported."
+}

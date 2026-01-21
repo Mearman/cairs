@@ -1,0 +1,88 @@
+{
+  "version": "1.0.0",
+  "airDefs": [
+    {
+      "ns": "set",
+      "name": "contains",
+      "params": ["set", "elem"],
+      "result": { "kind": "bool" },
+      "body": { "kind": "lit", "type": { "kind": "bool" }, "value": true }
+    }
+  ],
+  "nodes": [
+    {
+      "id": "set123",
+      "expr": {
+        "kind": "lit",
+        "type": {
+          "kind": "set",
+          "elem": { "kind": "int" }
+        },
+        "value": [1, 2, 3]
+      }
+    },
+    {
+      "id": "two",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "int" },
+        "value": 2
+      }
+    },
+    {
+      "id": "five",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "int" },
+        "value": 5
+      }
+    },
+    {
+      "id": "emptySet",
+      "expr": {
+        "kind": "lit",
+        "type": {
+          "kind": "set",
+          "elem": { "kind": "int" }
+        },
+        "value": []
+      }
+    },
+    {
+      "id": "one",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "int" },
+        "value": 1
+      }
+    },
+    {
+      "id": "containsExisting",
+      "expr": {
+        "kind": "call",
+        "ns": "set",
+        "name": "contains",
+        "args": ["set123", "two"]
+      }
+    },
+    {
+      "id": "containsNonExisting",
+      "expr": {
+        "kind": "call",
+        "ns": "set",
+        "name": "contains",
+        "args": ["set123", "five"]
+      }
+    },
+    {
+      "id": "emptySetContains",
+      "expr": {
+        "kind": "call",
+        "ns": "set",
+        "name": "contains",
+        "args": ["emptySet", "one"]
+      }
+    }
+  ],
+  "result": "containsExisting"
+}

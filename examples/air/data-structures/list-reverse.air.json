@@ -1,0 +1,69 @@
+{
+  "version": "1.0.0",
+  "airDefs": [],
+  "functionSigs": [
+    {
+      "ns": "list",
+      "name": "reverse",
+      "params": [
+        { "kind": "list", "of": { "kind": "int" } }
+      ],
+      "returns": { "kind": "list", "of": { "kind": "int" } },
+      "pure": true
+    }
+  ],
+  "nodes": [
+    {
+      "id": "list123",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "list", "of": { "kind": "int" } },
+        "value": [1, 2, 3]
+      }
+    },
+    {
+      "id": "reverse123",
+      "expr": {
+        "kind": "call",
+        "ns": "list",
+        "name": "reverse",
+        "args": ["list123"]
+      }
+    },
+    {
+      "id": "list1",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "list", "of": { "kind": "int" } },
+        "value": [1]
+      }
+    },
+    {
+      "id": "reverse1",
+      "expr": {
+        "kind": "call",
+        "ns": "list",
+        "name": "reverse",
+        "args": ["list1"]
+      }
+    },
+    {
+      "id": "emptyList",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "list", "of": { "kind": "int" } },
+        "value": []
+      }
+    },
+    {
+      "id": "reverseEmpty",
+      "expr": {
+        "kind": "call",
+        "ns": "list",
+        "name": "reverse",
+        "args": ["emptyList"]
+      }
+    }
+  ],
+  "result": "reverse123"
+}

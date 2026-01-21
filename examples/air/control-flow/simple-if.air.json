@@ -1,0 +1,87 @@
+{
+  "version": "1.0.0",
+  "airDefs": [
+    {
+      "ns": "core",
+      "name": "gte",
+      "params": ["a", "b"],
+      "result": { "kind": "bool" },
+      "body": { "kind": "ref", "id": "a" }
+    }
+  ],
+  "nodes": [
+    {
+      "id": "trueValue",
+      "expr": { "kind": "lit", "type": { "kind": "bool" }, "value": true }
+    },
+    {
+      "id": "falseValue",
+      "expr": { "kind": "lit", "type": { "kind": "bool" }, "value": false }
+    },
+    {
+      "id": "hundred",
+      "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 100 }
+    },
+    {
+      "id": "zero",
+      "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 0 }
+    },
+    {
+      "id": "ifTrue",
+      "expr": {
+        "kind": "if",
+        "cond": "trueValue",
+        "then": "hundred",
+        "else": "zero",
+        "type": { "kind": "int" }
+      }
+    },
+    {
+      "id": "ifFalse",
+      "expr": {
+        "kind": "if",
+        "cond": "falseValue",
+        "then": "hundred",
+        "else": "zero",
+        "type": { "kind": "int" }
+      }
+    },
+    {
+      "id": "age",
+      "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 20 }
+    },
+    {
+      "id": "eighteen",
+      "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 18 }
+    },
+    {
+      "id": "isAdult",
+      "expr": { "kind": "call", "ns": "core", "name": "gte", "args": ["age", "eighteen"] }
+    },
+    {
+      "id": "adult",
+      "expr": { "kind": "lit", "type": { "kind": "string" }, "value": "adult" }
+    },
+    {
+      "id": "minor",
+      "expr": { "kind": "lit", "type": { "kind": "string" }, "value": "minor" }
+    },
+    {
+      "id": "ageCheck",
+      "expr": {
+        "kind": "if",
+        "cond": "isAdult",
+        "then": "adult",
+        "else": "minor",
+        "type": { "kind": "string" }
+      }
+    }
+  ],
+  "result": "ifTrue",
+  "description": "Basic if expressions showing conditional branching",
+  "examples": [
+    "if true then 100 else 0 → 100",
+    "if false then 100 else 0 → 0",
+    "if (age >= 18) then 'adult' else 'minor' → 'adult' (when age = 20)"
+  ]
+}

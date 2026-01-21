@@ -1,0 +1,280 @@
+{
+  "version": "1.0.0",
+  "airDefs": [],
+  "nodes": [
+    {
+      "id": "score95",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "int" },
+        "value": 95
+      }
+    },
+    {
+      "id": "score85",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "int" },
+        "value": 85
+      }
+    },
+    {
+      "id": "score75",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "int" },
+        "value": 75
+      }
+    },
+    {
+      "id": "score65",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "int" },
+        "value": 65
+      }
+    },
+    {
+      "id": "score55",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "int" },
+        "value": 55
+      }
+    },
+    {
+      "id": "gradeA",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "string" },
+        "value": "A"
+      }
+    },
+    {
+      "id": "gradeB",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "string" },
+        "value": "B"
+      }
+    },
+    {
+      "id": "gradeC",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "string" },
+        "value": "C"
+      }
+    },
+    {
+      "id": "gradeD",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "string" },
+        "value": "D"
+      }
+    },
+    {
+      "id": "gradeF",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "string" },
+        "value": "F"
+      }
+    },
+    {
+      "id": "gte90",
+      "expr": {
+        "kind": "call",
+        "ns": "core",
+        "name": "gte",
+        "args": ["score95", "score90"]
+      }
+    },
+    {
+      "id": "score90",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "int" },
+        "value": 90
+      }
+    },
+    {
+      "id": "gte80",
+      "expr": {
+        "kind": "call",
+        "ns": "core",
+        "name": "gte",
+        "args": ["score85", "score80"]
+      }
+    },
+    {
+      "id": "score80",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "int" },
+        "value": 80
+      }
+    },
+    {
+      "id": "gte70",
+      "expr": {
+        "kind": "call",
+        "ns": "core",
+        "name": "gte",
+        "args": ["score75", "score70"]
+      }
+    },
+    {
+      "id": "score70",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "int" },
+        "value": 70
+      }
+    },
+    {
+      "id": "gte60",
+      "expr": {
+        "kind": "call",
+        "ns": "core",
+        "name": "gte",
+        "args": ["score65", "score60"]
+      }
+    },
+    {
+      "id": "score60",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "int" },
+        "value": 60
+      }
+    },
+    {
+      "id": "gte55",
+      "expr": {
+        "kind": "call",
+        "ns": "core",
+        "name": "gte",
+        "args": ["score55", "score60"]
+      }
+    },
+    {
+      "id": "leafGradeDF",
+      "expr": {
+        "kind": "if",
+        "cond": "gte55",
+        "then": "gradeD",
+        "else": "gradeF",
+        "type": { "kind": "string" }
+      }
+    },
+    {
+      "id": "innerGradeCDF",
+      "expr": {
+        "kind": "if",
+        "cond": "gte60",
+        "then": "gradeC",
+        "else": "leafGradeDF",
+        "type": { "kind": "string" }
+      }
+    },
+    {
+      "id": "midGradeBCDF",
+      "expr": {
+        "kind": "if",
+        "cond": "gte70",
+        "then": "gradeB",
+        "else": "innerGradeCDF",
+        "type": { "kind": "string" }
+      }
+    },
+    {
+      "id": "grade95",
+      "expr": {
+        "kind": "if",
+        "cond": "gte90",
+        "then": "gradeA",
+        "else": "midGradeBCDF",
+        "type": { "kind": "string" }
+      }
+    },
+    {
+      "id": "gte90_alt",
+      "expr": {
+        "kind": "call",
+        "ns": "core",
+        "name": "gte",
+        "args": ["score85", "score90"]
+      }
+    },
+    {
+      "id": "grade85",
+      "expr": {
+        "kind": "if",
+        "cond": "gte90_alt",
+        "then": "gradeA",
+        "else": "midGradeBCDF",
+        "type": { "kind": "string" }
+      }
+    },
+    {
+      "id": "gte90_75",
+      "expr": {
+        "kind": "call",
+        "ns": "core",
+        "name": "gte",
+        "args": ["score75", "score90"]
+      }
+    },
+    {
+      "id": "grade75",
+      "expr": {
+        "kind": "if",
+        "cond": "gte90_75",
+        "then": "gradeA",
+        "else": "midGradeBCDF",
+        "type": { "kind": "string" }
+      }
+    },
+    {
+      "id": "gte90_65",
+      "expr": {
+        "kind": "call",
+        "ns": "core",
+        "name": "gte",
+        "args": ["score65", "score90"]
+      }
+    },
+    {
+      "id": "grade65",
+      "expr": {
+        "kind": "if",
+        "cond": "gte90_65",
+        "then": "gradeA",
+        "else": "midGradeBCDF",
+        "type": { "kind": "string" }
+      }
+    },
+    {
+      "id": "gte90_55",
+      "expr": {
+        "kind": "call",
+        "ns": "core",
+        "name": "gte",
+        "args": ["score55", "score90"]
+      }
+    },
+    {
+      "id": "grade55",
+      "expr": {
+        "kind": "if",
+        "cond": "gte90_55",
+        "then": "gradeA",
+        "else": "midGradeBCDF",
+        "type": { "kind": "string" }
+      }
+    }
+  ],
+  "result": "grade55"
+}

@@ -1,0 +1,150 @@
+{
+  "$schema": "../../../schemas/cir-schema.json",
+  "description": "Example showing how airRef allows CIR to call AIR definitions. This demonstrates the interoperability between AIR (effectful computations) and CIR (pure computations).",
+  "airDefs": [
+    {
+      "name": "double",
+      "params": ["x"],
+      "body": {
+        "type": "Binary",
+        "operator": "Mul",
+        "left": { "type": "Identifier", "name": "x" },
+        "right": { "type": "Literal", "value": 2, "dataType": "Int" }
+      }
+    },
+    {
+      "name": "increment",
+      "params": ["x"],
+      "body": {
+        "type": "Binary",
+        "operator": "Add",
+        "left": { "type": "Identifier", "name": "x" },
+        "right": { "type": "Literal", "value": 1, "dataType": "Int" }
+      }
+    },
+    {
+      "name": "square",
+      "params": ["x"],
+      "body": {
+        "type": "Binary",
+        "operator": "Mul",
+        "left": { "type": "Identifier", "name": "x" },
+        "right": { "type": "Identifier", "name": "x" }
+      }
+    }
+  ],
+  "expr": {
+    "type": "Let",
+    "name": "applyTwice",
+    "value": {
+      "type": "Lambda",
+      "params": [
+        { "name": "f", "dataType": "Function" },
+        { "name": "x", "dataType": "Int" }
+      ],
+      "returnType": "Int",
+      "body": {
+        "type": "Application",
+        "callee": {
+          "type": "Identifier",
+          "name": "f"
+        },
+        "arg": {
+          "type": "Application",
+          "callee": {
+            "type": "Identifier",
+            "name": "f"
+          },
+          "arg": {
+            "type": "Identifier",
+            "name": "x"
+          }
+        }
+      }
+    },
+    "body": {
+      "type": "Let",
+      "name": "doubleThenSquare",
+      "value": {
+        "type": "Lambda",
+        "params": [
+          { "name": "x", "dataType": "Int" }
+        ],
+        "returnType": "Int",
+        "body": {
+          "type": "Application",
+          "callee": {
+            "type": "airRef",
+            "name": "square"
+          },
+          "arg": {
+            "type": "Application",
+            "callee": {
+              "type": "airRef",
+              "name": "double"
+            },
+            "arg": {
+              "type": "Identifier",
+              "name": "x"
+            }
+          }
+        }
+      },
+      "body": {
+        "type": "Tuple",
+        "elements": [
+          {
+            "comment": "Apply double twice: 5 -> 10 -> 20",
+            "type": "Application",
+            "callee": {
+              "type": "Identifier",
+              "name": "applyTwice"
+            },
+            "arg": {
+              "type": "airRef",
+              "name": "double"
+            }
+          },
+          {
+            "comment": "Apply increment twice: 5 -> 6 -> 7",
+            "type": "Application",
+            "callee": {
+              "type": "Identifier",
+              "name": "applyTwice"
+            },
+            "arg": {
+              "type": "airRef",
+              "name": "increment"
+            }
+          },
+          {
+            "comment": "Compose: square(double(5)) = square(10) = 100",
+            "type": "Application",
+            "callee": {
+              "type": "Identifier",
+              "name": "doubleThenSquare"
+            },
+            "arg": {
+              "type": "Literal",
+              "value": 5,
+              "dataType": "Int"
+            }
+          },
+          {
+            "comment": "Direct airRef call: double(100) = 200",
+            "type": "Application",
+            "callee": {
+              "type": "airRef",
+              "name": "double"
+            },
+            "arg": {
+              "type": "Literal",
+              "value": 100,
+              "dataType": "Int"
+            }
+          }
+        ]
+      }
+    }
+  }
+}

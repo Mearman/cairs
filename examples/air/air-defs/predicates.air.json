@@ -1,0 +1,238 @@
+{
+  "version": "1.0.0",
+  "comment": [
+    "Demonstration of predicate definitions using airDef.",
+    "Predicates are functions that return boolean values and can be used in conditional expressions."
+  ],
+  "airDefs": [
+    {
+      "ns": "pred",
+      "name": "isPositive",
+      "params": ["x"],
+      "result": { "kind": "bool" },
+      "body": {
+        "kind": "call",
+        "ns": "core",
+        "name": "gt",
+        "args": ["x", "zero"]
+      }
+    },
+    {
+      "ns": "pred",
+      "name": "isNegative",
+      "params": ["x"],
+      "result": { "kind": "bool" },
+      "body": {
+        "kind": "call",
+        "ns": "core",
+        "name": "lt",
+        "args": ["x", "zero"]
+      }
+    },
+    {
+      "ns": "pred",
+      "name": "isZero",
+      "params": ["x"],
+      "result": { "kind": "bool" },
+      "body": {
+        "kind": "call",
+        "ns": "core",
+        "name": "eq",
+        "args": ["x", "zero"]
+      }
+    },
+    {
+      "ns": "pred",
+      "name": "isEven",
+      "params": ["x"],
+      "result": { "kind": "bool" },
+      "body": {
+        "kind": "call",
+        "ns": "core",
+        "name": "eq",
+        "args": ["remainder", "zero"]
+      }
+    },
+    {
+      "ns": "pred",
+      "name": "isOdd",
+      "params": ["x"],
+      "result": { "kind": "bool" },
+      "body": {
+        "kind": "call",
+        "ns": "core",
+        "name": "neq",
+        "args": ["remainder", "zero"]
+      }
+    }
+  ],
+  "functionSigs": [
+    {
+      "ns": "core",
+      "name": "gt",
+      "params": [{ "kind": "int" }, { "kind": "int" }],
+      "returns": { "kind": "bool" },
+      "pure": true
+    },
+    {
+      "ns": "core",
+      "name": "lt",
+      "params": [{ "kind": "int" }, { "kind": "int" }],
+      "returns": { "kind": "bool" },
+      "pure": true
+    },
+    {
+      "ns": "core",
+      "name": "eq",
+      "params": [{ "kind": "int" }, { "kind": "int" }],
+      "returns": { "kind": "bool" },
+      "pure": true
+    },
+    {
+      "ns": "core",
+      "name": "neq",
+      "params": [{ "kind": "int" }, { "kind": "int" }],
+      "returns": { "kind": "bool" },
+      "pure": true
+    },
+    {
+      "ns": "core",
+      "name": "rem",
+      "params": [{ "kind": "int" }, { "kind": "int" }],
+      "returns": { "kind": "int" },
+      "pure": true
+    }
+  ],
+  "nodes": [
+    {
+      "id": "zero",
+      "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 0 }
+    },
+    {
+      "id": "two",
+      "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 2 }
+    },
+    {
+      "id": "posFive",
+      "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 5 }
+    },
+    {
+      "id": "negFive",
+      "expr": { "kind": "lit", "type": { "kind": "int" }, "value": -5 }
+    },
+    {
+      "id": "zeroValue",
+      "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 0 }
+    },
+    {
+      "id": "remainder",
+      "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 0 }
+    },
+    {
+      "id": "isPositive_check",
+      "expr": {
+        "kind": "airRef",
+        "ns": "pred",
+        "name": "isPositive",
+        "args": ["posFive"]
+      }
+    },
+    {
+      "id": "isNegative_check",
+      "expr": {
+        "kind": "airRef",
+        "ns": "pred",
+        "name": "isNegative",
+        "args": ["negFive"]
+      }
+    },
+    {
+      "id": "isZero_check",
+      "expr": {
+        "kind": "airRef",
+        "ns": "pred",
+        "name": "isZero",
+        "args": ["zeroValue"]
+      }
+    },
+    {
+      "id": "classify_positive",
+      "expr": {
+        "kind": "if",
+        "cond": "isPositive_check",
+        "then": "positiveLabel",
+        "else": "notPositiveLabel"
+      }
+    },
+    {
+      "id": "positiveLabel",
+      "expr": { "kind": "lit", "type": { "kind": "string" }, "value": "positive" }
+    },
+    {
+      "id": "notPositiveLabel",
+      "expr": { "kind": "lit", "type": { "kind": "string" }, "value": "not positive" }
+    },
+    {
+      "id": "classify_negative",
+      "expr": {
+        "kind": "if",
+        "cond": "isNegative_check",
+        "then": "negativeLabel",
+        "else": "notNegativeLabel"
+      }
+    },
+    {
+      "id": "negativeLabel",
+      "expr": { "kind": "lit", "type": { "kind": "string" }, "value": "negative" }
+    },
+    {
+      "id": "notNegativeLabel",
+      "expr": { "kind": "lit", "type": { "kind": "string" }, "value": "not negative" }
+    },
+    {
+      "id": "classify_zero",
+      "expr": {
+        "kind": "if",
+        "cond": "isZero_check",
+        "then": "zeroLabel",
+        "else": "nonZeroLabel"
+      }
+    },
+    {
+      "id": "zeroLabel",
+      "expr": { "kind": "lit", "type": { "kind": "string" }, "value": "zero" }
+    },
+    {
+      "id": "nonZeroLabel",
+      "expr": { "kind": "lit", "type": { "kind": "string" }, "value": "non-zero" }
+    },
+    {
+      "id": "tripleCheck_positive",
+      "expr": {
+        "kind": "if",
+        "cond": "isPositive_check",
+        "then": "tripleCheck_positive_isZero",
+        "else": "tripleCheck_negative"
+      }
+    },
+    {
+      "id": "tripleCheck_positive_isZero",
+      "expr": {
+        "kind": "if",
+        "cond": "isZero_check",
+        "then": "zeroLabel",
+        "else": "positiveLabel"
+      }
+    },
+    {
+      "id": "tripleCheck_negative",
+      "expr": {
+        "kind": "if",
+        "cond": "isNegative_check",
+        "then": "negativeLabel",
+        "else": "zeroLabel"
+      }
+    }
+  ],
+  "result": "tripleCheck_positive"
+}

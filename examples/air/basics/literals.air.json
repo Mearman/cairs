@@ -1,0 +1,63 @@
+{
+  "version": "1.0.0",
+  "airDefs": [],
+  "nodes": [
+    {
+      "id": "intLiteral",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "int" },
+        "value": 42
+      }
+    },
+    {
+      "id": "floatLiteral",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "float" },
+        "value": 3.14
+      }
+    },
+    {
+      "id": "boolTrue",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "bool" },
+        "value": true
+      }
+    },
+    {
+      "id": "boolFalse",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "bool" },
+        "value": false
+      }
+    },
+    {
+      "id": "stringLiteral",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "string" },
+        "value": "hello"
+      }
+    },
+    {
+      "id": "listLiteral",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "list", "of": { "kind": "int" } },
+        "value": [1, 2, 3]
+      }
+    },
+    {
+      "id": "setLiteral",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "set", "of": { "kind": "int" } },
+        "value": [1, 2, 3]
+      }
+    }
+  ],
+  "result": "setLiteral"
+}

@@ -1,0 +1,85 @@
+{
+  "version": "1.0.0",
+  "airDefs": [
+    {
+      "ns": "core",
+      "name": "add",
+      "params": ["a", "b"],
+      "result": { "kind": "int" },
+      "body": { "kind": "ref", "id": "a" }
+    }
+  ],
+  "nodes": [
+    {
+      "id": "five",
+      "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 5 }
+    },
+    {
+      "id": "three",
+      "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 3 }
+    },
+    {
+      "id": "two",
+      "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 2 }
+    },
+    {
+      "id": "ten",
+      "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 10 }
+    },
+    {
+      "id": "add",
+      "expr": {
+        "kind": "lambda",
+        "params": ["x", "y"],
+        "body": "addBody",
+        "type": {
+          "kind": "fn",
+          "params": [{ "kind": "int" }, { "kind": "int" }],
+          "returns": { "kind": "int" }
+        }
+      }
+    },
+    {
+      "id": "addBody",
+      "expr": {
+        "kind": "call",
+        "ns": "core",
+        "name": "add",
+        "args": ["x", "y"]
+      }
+    },
+    {
+      "id": "addFive",
+      "expr": {
+        "kind": "callExpr",
+        "fn": "add",
+        "args": ["five"]
+      }
+    },
+    {
+      "id": "curriedResult",
+      "expr": {
+        "kind": "callExpr",
+        "fn": "addFive",
+        "args": ["three"]
+      }
+    },
+    {
+      "id": "addTwo",
+      "expr": {
+        "kind": "callExpr",
+        "fn": "add",
+        "args": ["two"]
+      }
+    },
+    {
+      "id": "partialResult",
+      "expr": {
+        "kind": "callExpr",
+        "fn": "addTwo",
+        "args": ["ten"]
+      }
+    }
+  ],
+  "result": "curriedResult"
+}

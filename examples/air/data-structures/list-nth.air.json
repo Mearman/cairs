@@ -1,0 +1,78 @@
+{
+  "version": "1.0.0",
+  "airDefs": [],
+  "functionSigs": [
+    {
+      "ns": "list",
+      "name": "nth",
+      "params": [
+        { "kind": "list", "of": { "kind": "int" } },
+        { "kind": "int" }
+      ],
+      "returns": { "kind": "int" },
+      "pure": true
+    }
+  ],
+  "nodes": [
+    {
+      "id": "list",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "list", "of": { "kind": "int" } },
+        "value": [10, 20, 30]
+      }
+    },
+    {
+      "id": "index0",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "int" },
+        "value": 0
+      }
+    },
+    {
+      "id": "index1",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "int" },
+        "value": 1
+      }
+    },
+    {
+      "id": "index2",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "int" },
+        "value": 2
+      }
+    },
+    {
+      "id": "nth0",
+      "expr": {
+        "kind": "call",
+        "ns": "list",
+        "name": "nth",
+        "args": ["list", "index0"]
+      }
+    },
+    {
+      "id": "nth1",
+      "expr": {
+        "kind": "call",
+        "ns": "list",
+        "name": "nth",
+        "args": ["list", "index1"]
+      }
+    },
+    {
+      "id": "nth2",
+      "expr": {
+        "kind": "call",
+        "ns": "list",
+        "name": "nth",
+        "args": ["list", "index2"]
+      }
+    }
+  ],
+  "result": "nth2"
+}

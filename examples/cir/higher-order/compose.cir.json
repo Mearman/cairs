@@ -1,0 +1,151 @@
+{
+  "version": "1.0.0",
+  "airDefs": [
+    {
+      "ns": "core",
+      "name": "mul",
+      "params": ["a", "b"],
+      "result": { "kind": "int" },
+      "body": { "kind": "ref", "id": "a" }
+    },
+    {
+      "ns": "core",
+      "name": "add",
+      "params": ["a", "b"],
+      "result": { "kind": "int" },
+      "body": { "kind": "ref", "id": "a" }
+    }
+  ],
+  "nodes": [
+    {
+      "id": "five",
+      "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 5 }
+    },
+    {
+      "id": "two",
+      "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 2 }
+    },
+    {
+      "id": "one",
+      "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 1 }
+    },
+    {
+      "id": "mul2",
+      "expr": {
+        "kind": "lambda",
+        "params": ["x"],
+        "body": "mul2Body",
+        "type": {
+          "kind": "fn",
+          "params": [{ "kind": "int" }],
+          "returns": { "kind": "int" }
+        }
+      }
+    },
+    {
+      "id": "mul2Body",
+      "expr": {
+        "kind": "call",
+        "ns": "core",
+        "name": "mul",
+        "args": ["x", "two"]
+      }
+    },
+    {
+      "id": "add1",
+      "expr": {
+        "kind": "lambda",
+        "params": ["x"],
+        "body": "add1Body",
+        "type": {
+          "kind": "fn",
+          "params": [{ "kind": "int" }],
+          "returns": { "kind": "int" }
+        }
+      }
+    },
+    {
+      "id": "add1Body",
+      "expr": {
+        "kind": "call",
+        "ns": "core",
+        "name": "add",
+        "args": ["x", "one"]
+      }
+    },
+    {
+      "id": "compose",
+      "expr": {
+        "kind": "lambda",
+        "params": ["f", "g"],
+        "body": "composeBody",
+        "type": {
+          "kind": "fn",
+          "params": [
+            {
+              "kind": "fn",
+              "params": [{ "kind": "int" }],
+              "returns": { "kind": "int" }
+            },
+            {
+              "kind": "fn",
+              "params": [{ "kind": "int" }],
+              "returns": { "kind": "int" }
+            }
+          ],
+          "returns": {
+            "kind": "fn",
+            "params": [{ "kind": "int" }],
+            "returns": { "kind": "int" }
+          }
+        }
+      }
+    },
+    {
+      "id": "composeBody",
+      "expr": {
+        "kind": "lambda",
+        "params": ["x"],
+        "body": "composeInnerBody",
+        "type": {
+          "kind": "fn",
+          "params": [{ "kind": "int" }],
+          "returns": { "kind": "int" }
+        }
+      }
+    },
+    {
+      "id": "gx",
+      "expr": {
+        "kind": "callExpr",
+        "fn": "g",
+        "args": ["x"]
+      }
+    },
+    {
+      "id": "composeInnerBody",
+      "expr": {
+        "kind": "callExpr",
+        "fn": "f",
+        "args": ["gx"]
+      }
+    },
+    {
+      "id": "composeAdd1Mul2",
+      "expr": {
+        "kind": "callExpr",
+        "fn": "compose",
+        "args": ["add1", "mul2"]
+      }
+    },
+    {
+      "id": "result",
+      "expr": {
+        "kind": "callExpr",
+        "fn": "composeAdd1Mul2",
+        "args": ["five"]
+      }
+    }
+  ],
+  "result": "result"
+}

@@ -1,0 +1,239 @@
+{
+  "version": "1.0.0",
+  "description": "Fibonacci sequence demonstrating lambda calculus structure. This example computes fibonacci(7) = 13 using lambda functions. Shows: (1) Lambda functions with single and multiple parameters (identityLambda, incrementLambda, fibStepLambda), (2) Function application via callExpr, (3) The fibonacci pattern fib(n) = fib(n-1) + fib(n-2) computed using fibStep lambda iteratively, (4) Conditional logic using if expressions with lte comparison.",
+  "airDefs": [
+    {
+      "ns": "core",
+      "name": "add",
+      "params": ["a", "b"],
+      "result": { "kind": "int" },
+      "body": { "kind": "ref", "id": "a" }
+    },
+    {
+      "ns": "core",
+      "name": "sub",
+      "params": ["a", "b"],
+      "result": { "kind": "int" },
+      "body": { "kind": "ref", "id": "a" }
+    },
+    {
+      "ns": "core",
+      "name": "lte",
+      "params": ["a", "b"],
+      "result": { "kind": "bool" },
+      "body": { "kind": "ref", "id": "a" }
+    }
+  ],
+  "nodes": [
+    {
+      "id": "zero",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "int" },
+        "value": 0
+      }
+    },
+    {
+      "id": "one",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "int" },
+        "value": 1
+      }
+    },
+    {
+      "id": "two",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "int" },
+        "value": 2
+      }
+    },
+    {
+      "id": "seven",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "int" },
+        "value": 7
+      }
+    },
+    {
+      "id": "identityLambda",
+      "expr": {
+        "kind": "lambda",
+        "params": ["x"],
+        "body": "identityBody",
+        "type": {
+          "kind": "fn",
+          "params": [{ "kind": "int" }],
+          "returns": { "kind": "int" }
+        }
+      }
+    },
+    {
+      "id": "identityBody",
+      "expr": {
+        "kind": "var",
+        "name": "x"
+      }
+    },
+    {
+      "id": "incrementLambda",
+      "expr": {
+        "kind": "lambda",
+        "params": ["x"],
+        "body": "incrementBody",
+        "type": {
+          "kind": "fn",
+          "params": [{ "kind": "int" }],
+          "returns": { "kind": "int" }
+        }
+      }
+    },
+    {
+      "id": "incrementBody",
+      "expr": {
+        "kind": "call",
+        "ns": "core",
+        "name": "add",
+        "args": ["x", "one"]
+      }
+    },
+    {
+      "id": "fibStepLambda",
+      "expr": {
+        "kind": "lambda",
+        "params": ["prev", "curr"],
+        "body": "fibStepBody",
+        "type": {
+          "kind": "fn",
+          "params": [{ "kind": "int" }, { "kind": "int" }],
+          "returns": { "kind": "int" }
+        }
+      }
+    },
+    {
+      "id": "fibStepBody",
+      "expr": {
+        "kind": "call",
+        "ns": "core",
+        "name": "add",
+        "args": ["prev", "curr"]
+      }
+    },
+    {
+      "id": "fib0",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "int" },
+        "value": 0
+      }
+    },
+    {
+      "id": "fib1",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "int" },
+        "value": 1
+      }
+    },
+    {
+      "id": "fib2",
+      "expr": {
+        "kind": "callExpr",
+        "fn": "fibStepLambda",
+        "args": ["fib1", "fib0"]
+      }
+    },
+    {
+      "id": "fib3",
+      "expr": {
+        "kind": "callExpr",
+        "fn": "fibStepLambda",
+        "args": ["fib2", "fib1"]
+      }
+    },
+    {
+      "id": "fib4",
+      "expr": {
+        "kind": "callExpr",
+        "fn": "fibStepLambda",
+        "args": ["fib3", "fib2"]
+      }
+    },
+    {
+      "id": "fib5",
+      "expr": {
+        "kind": "callExpr",
+        "fn": "fibStepLambda",
+        "args": ["fib4", "fib3"]
+      }
+    },
+    {
+      "id": "fib6",
+      "expr": {
+        "kind": "callExpr",
+        "fn": "fibStepLambda",
+        "args": ["fib5", "fib4"]
+      }
+    },
+    {
+      "id": "fib7Calc",
+      "expr": {
+        "kind": "callExpr",
+        "fn": "fibStepLambda",
+        "args": ["fib6", "fib5"]
+      }
+    },
+    {
+      "id": "fib7",
+      "expr": {
+        "kind": "ref",
+        "id": "fib7Calc"
+      }
+    },
+    {
+      "id": "identityApplied",
+      "expr": {
+        "kind": "callExpr",
+        "fn": "identityLambda",
+        "args": ["fib7"]
+      }
+    },
+    {
+      "id": "incrementApplied",
+      "expr": {
+        "kind": "callExpr",
+        "fn": "incrementLambda",
+        "args": ["fib7"]
+      }
+    },
+    {
+      "id": "shouldUseFib",
+      "expr": {
+        "kind": "call",
+        "ns": "core",
+        "name": "lte",
+        "args": ["one", "seven"]
+      }
+    },
+    {
+      "id": "topLevelConditional",
+      "expr": {
+        "kind": "if",
+        "cond": "shouldUseFib",
+        "then": "identityApplied",
+        "else": "zero",
+        "type": { "kind": "int" }
+      }
+    },
+    {
+      "id": "result",
+      "expr": {
+        "kind": "ref",
+        "id": "topLevelConditional"
+      }
+    }
+  ],
+  "result": "result"
+}

@@ -1,0 +1,200 @@
+{
+  "version": "1.0.0",
+  "airDefs": [
+    {
+      "ns": "math",
+      "name": "add1",
+      "params": ["n"],
+      "result": { "kind": "int" },
+      "body": {
+        "kind": "call",
+        "ns": "core",
+        "name": "add",
+        "args": ["n", "one"]
+      }
+    },
+    {
+      "ns": "math",
+      "name": "mul2",
+      "params": ["n"],
+      "result": { "kind": "int" },
+      "body": {
+        "kind": "call",
+        "ns": "core",
+        "name": "mul",
+        "args": ["n", "two"]
+      }
+    },
+    {
+      "ns": "math",
+      "name": "square",
+      "params": ["n"],
+      "result": { "kind": "int" },
+      "body": {
+        "kind": "call",
+        "ns": "core",
+        "name": "mul",
+        "args": ["n", "n"]
+      }
+    },
+    {
+      "ns": "math",
+      "name": "add1ThenMul2",
+      "params": ["n"],
+      "result": { "kind": "int" },
+      "body": {
+        "kind": "call",
+        "ns": "core",
+        "name": "mul",
+        "args": ["n_plus_1", "two"]
+      }
+    },
+    {
+      "ns": "math",
+      "name": "mul2ThenAdd1",
+      "params": ["n"],
+      "result": { "kind": "int" },
+      "body": {
+        "kind": "call",
+        "ns": "core",
+        "name": "add",
+        "args": ["n_times_2", "one"]
+      }
+    },
+    {
+      "ns": "math",
+      "name": "doubleAndSquare",
+      "params": ["n"],
+      "result": { "kind": "int" },
+      "body": {
+        "kind": "call",
+        "ns": "core",
+        "name": "mul",
+        "args": ["doubled", "doubled"]
+      }
+    }
+  ],
+  "functionSigs": [
+    {
+      "ns": "core",
+      "name": "add",
+      "params": [{ "kind": "int" }, { "kind": "int" }],
+      "returns": { "kind": "int" },
+      "pure": true
+    },
+    {
+      "ns": "core",
+      "name": "mul",
+      "params": [{ "kind": "int" }, { "kind": "int" }],
+      "returns": { "kind": "int" },
+      "pure": true
+    }
+  ],
+  "nodes": [
+    {
+      "id": "one",
+      "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 1 }
+    },
+    {
+      "id": "two",
+      "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 2 }
+    },
+    {
+      "id": "five",
+      "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 5 }
+    },
+    {
+      "id": "x",
+      "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 7 }
+    },
+    {
+      "id": "n_plus_1",
+      "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 0 }
+    },
+    {
+      "id": "n_times_2",
+      "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 0 }
+    },
+    {
+      "id": "doubled",
+      "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 0 }
+    },
+    {
+      "id": "y",
+      "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 0 }
+    },
+    {
+      "id": "simpleAdd1",
+      "expr": {
+        "kind": "airRef",
+        "ns": "math",
+        "name": "add1",
+        "args": ["five"]
+      }
+    },
+    {
+      "id": "simpleMul2",
+      "expr": {
+        "kind": "airRef",
+        "ns": "math",
+        "name": "mul2",
+        "args": ["five"]
+      }
+    },
+    {
+      "id": "simpleSquare",
+      "expr": {
+        "kind": "airRef",
+        "ns": "math",
+        "name": "square",
+        "args": ["five"]
+      }
+    },
+    {
+      "id": "firstMul2",
+      "expr": {
+        "kind": "airRef",
+        "ns": "math",
+        "name": "mul2",
+        "args": ["x"]
+      }
+    },
+    {
+      "id": "composed",
+      "expr": {
+        "kind": "airRef",
+        "ns": "math",
+        "name": "add1",
+        "args": ["firstMul2"]
+      }
+    },
+    {
+      "id": "level2Add1ThenMul2",
+      "expr": {
+        "kind": "airRef",
+        "ns": "math",
+        "name": "add1ThenMul2",
+        "args": ["five"]
+      }
+    },
+    {
+      "id": "level2Mul2ThenAdd1",
+      "expr": {
+        "kind": "airRef",
+        "ns": "math",
+        "name": "mul2ThenAdd1",
+        "args": ["five"]
+      }
+    },
+    {
+      "id": "level3DoubleAndSquare",
+      "expr": {
+        "kind": "airRef",
+        "ns": "math",
+        "name": "doubleAndSquare",
+        "args": ["five"]
+      }
+    }
+  ],
+  "result": "composed"
+}

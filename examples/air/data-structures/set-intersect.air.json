@@ -1,0 +1,137 @@
+{
+  "version": "1.0.0",
+  "airDefs": [],
+  "functionSigs": [
+    {
+      "ns": "set",
+      "name": "intersect",
+      "params": [
+        { "kind": "set", "of": { "kind": "int" } },
+        { "kind": "set", "of": { "kind": "int" } }
+      ],
+      "returns": { "kind": "set", "of": { "kind": "int" } },
+      "pure": true
+    }
+  ],
+  "nodes": [
+    {
+      "id": "setA",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "set", "of": { "kind": "int" } },
+        "value": [1, 2, 3]
+      }
+    },
+    {
+      "id": "setB",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "set", "of": { "kind": "int" } },
+        "value": [2, 3, 4]
+      }
+    },
+    {
+      "id": "basicIntersect",
+      "expr": {
+        "kind": "call",
+        "ns": "set",
+        "name": "intersect",
+        "args": ["setA", "setB"]
+      }
+    },
+    {
+      "id": "setC",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "set", "of": { "kind": "int" } },
+        "value": [1, 2]
+      }
+    },
+    {
+      "id": "setD",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "set", "of": { "kind": "int" } },
+        "value": [3, 4]
+      }
+    },
+    {
+      "id": "disjointIntersect",
+      "expr": {
+        "kind": "call",
+        "ns": "set",
+        "name": "intersect",
+        "args": ["setC", "setD"]
+      }
+    },
+    {
+      "id": "emptySet",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "set", "of": { "kind": "int" } },
+        "value": []
+      }
+    },
+    {
+      "id": "setE",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "set", "of": { "kind": "int" } },
+        "value": [1, 2, 3]
+      }
+    },
+    {
+      "id": "emptyLeftIntersect",
+      "expr": {
+        "kind": "call",
+        "ns": "set",
+        "name": "intersect",
+        "args": ["emptySet", "setE"]
+      }
+    },
+    {
+      "id": "emptyRightIntersect",
+      "expr": {
+        "kind": "call",
+        "ns": "set",
+        "name": "intersect",
+        "args": ["setE", "emptySet"]
+      }
+    },
+    {
+      "id": "emptyBothIntersect",
+      "expr": {
+        "kind": "call",
+        "ns": "set",
+        "name": "intersect",
+        "args": ["emptySet", "emptySet"]
+      }
+    },
+    {
+      "id": "setF",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "set", "of": { "kind": "int" } },
+        "value": [1, 2, 3, 4, 5]
+      }
+    },
+    {
+      "id": "setG",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "set", "of": { "kind": "int" } },
+        "value": [3, 4, 5, 6, 7]
+      }
+    },
+    {
+      "id": "overlapIntersect",
+      "expr": {
+        "kind": "call",
+        "ns": "set",
+        "name": "intersect",
+        "args": ["setF", "setG"]
+      }
+    }
+  ],
+  "result": "basicIntersect"
+}

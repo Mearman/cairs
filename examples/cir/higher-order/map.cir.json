@@ -1,0 +1,238 @@
+{
+  "description": "Map operation on lists: map(lambda x -> x * 2, [1, 2, 3]) => [2, 4, 6]",
+  "version": "1.0.0",
+  "airDefs": [
+    {
+      "ns": "core",
+      "name": "mul",
+      "params": ["a", "b"],
+      "result": { "kind": "int" },
+      "body": { "kind": "ref", "id": "a" }
+    },
+    {
+      "ns": "list",
+      "name": "nth",
+      "params": ["xs", "n"],
+      "result": { "kind": "int" },
+      "body": { "kind": "ref", "id": "xs" }
+    },
+    {
+      "ns": "list",
+      "name": "slice",
+      "params": ["xs", "n"],
+      "result": { "kind": "list", "of": { "kind": "int" } },
+      "body": { "kind": "ref", "id": "xs" }
+    },
+    {
+      "ns": "list",
+      "name": "length",
+      "params": ["xs"],
+      "result": { "kind": "int" },
+      "body": { "kind": "ref", "id": "xs" }
+    },
+    {
+      "ns": "list",
+      "name": "cons",
+      "params": ["x", "xs"],
+      "result": { "kind": "list", "of": { "kind": "int" } },
+      "body": { "kind": "ref", "id": "xs" }
+    }
+  ],
+  "nodes": [
+    {
+      "id": "two",
+      "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 2 }
+    },
+    {
+      "id": "zero",
+      "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 0 }
+    },
+    {
+      "id": "one",
+      "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 1 }
+    },
+    {
+      "id": "inputList",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "list", "of": { "kind": "int" } },
+        "value": [1, 2, 3]
+      }
+    },
+    {
+      "id": "double",
+      "expr": {
+        "kind": "lambda",
+        "params": ["x"],
+        "body": "doubledX",
+        "type": {
+          "kind": "fn",
+          "params": [{ "kind": "int" }],
+          "returns": { "kind": "int" }
+        }
+      }
+    },
+    {
+      "id": "doubledX",
+      "expr": {
+        "kind": "call",
+        "ns": "core",
+        "name": "mul",
+        "args": ["x", "two"]
+      }
+    },
+    {
+      "id": "map",
+      "expr": {
+        "kind": "lambda",
+        "params": ["f", "xs"],
+        "body": "mapBody",
+        "type": {
+          "kind": "fn",
+          "params": [
+            {
+              "kind": "fn",
+              "params": [{ "kind": "int" }],
+              "returns": { "kind": "int" }
+            },
+            { "kind": "list", "of": { "kind": "int" } }
+          ],
+          "returns": { "kind": "list", "of": { "kind": "int" } }
+        }
+      }
+    },
+    {
+      "id": "xsLength",
+      "expr": {
+        "kind": "call",
+        "ns": "list",
+        "name": "length",
+        "args": ["xs"]
+      }
+    },
+    {
+      "id": "isEmpty",
+      "expr": {
+        "kind": "call",
+        "ns": "core",
+        "name": "eq",
+        "args": ["xsLength", "zero"]
+      }
+    },
+    {
+      "id": "mapBody",
+      "expr": {
+        "kind": "if",
+        "cond": "isEmpty",
+        "then": "emptyList",
+        "else": "mapRecursive",
+        "type": { "kind": "list", "of": { "kind": "int" } }
+      }
+    },
+    {
+      "id": "emptyList",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "list", "of": { "kind": "int" } },
+        "value": []
+      }
+    },
+    {
+      "id": "head",
+      "expr": {
+        "kind": "call",
+        "ns": "list",
+        "name": "nth",
+        "args": ["xs", "zero"]
+      }
+    },
+    {
+      "id": "tail",
+      "expr": {
+        "kind": "call",
+        "ns": "list",
+        "name": "slice",
+        "args": ["xs", "one"]
+      }
+    },
+    {
+      "id": "mappedHead",
+      "expr": {
+        "kind": "callExpr",
+        "fn": "f",
+        "args": ["head"]
+      }
+    },
+    {
+      "id": "mapRecursive",
+      "expr": {
+        "kind": "let",
+        "name": "rest",
+        "value": "mapRest",
+        "body": "consResult"
+      }
+    },
+    {
+      "id": "mapRest",
+      "expr": {
+        "kind": "callExpr",
+        "fn": "map",
+        "args": ["f", "tail"]
+      }
+    },
+    {
+      "id": "consResult",
+      "expr": {
+        "kind": "call",
+        "ns": "list",
+        "name": "cons",
+        "args": ["mappedHead", "rest"]
+      }
+    },
+    {
+      "id": "doubleList",
+      "expr": {
+        "kind": "callExpr",
+        "fn": "map",
+        "args": ["double", "inputList"]
+      }
+    },
+    {
+      "id": "first",
+      "expr": {
+        "kind": "call",
+        "ns": "list",
+        "name": "nth",
+        "args": ["doubleList", "zero"]
+      }
+    },
+    {
+      "id": "second",
+      "expr": {
+        "kind": "call",
+        "ns": "list",
+        "name": "nth",
+        "args": ["doubleList", "one"]
+      }
+    },
+    {
+      "id": "third",
+      "expr": {
+        "kind": "call",
+        "ns": "list",
+        "name": "nth",
+        "args": ["doubleList", "two"]
+      }
+    },
+    {
+      "id": "result",
+      "expr": {
+        "kind": "call",
+        "ns": "list",
+        "name": "nth",
+        "args": ["doubleList", "zero"]
+      }
+    }
+  ],
+  "result": "result"
+}

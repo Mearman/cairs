@@ -1,0 +1,131 @@
+{
+  "version": "1.0.0",
+  "airDefs": [],
+  "nodes": [
+    {
+      "id": "five",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "int" },
+        "value": 5
+      }
+    },
+    {
+      "id": "ten",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "int" },
+        "value": 10
+      }
+    },
+    {
+      "id": "eqTrue",
+      "expr": {
+        "kind": "call",
+        "ns": "core",
+        "name": "eq",
+        "args": ["five", "five"]
+      }
+    },
+    {
+      "id": "eqFalse",
+      "expr": {
+        "kind": "call",
+        "ns": "core",
+        "name": "eq",
+        "args": ["five", "ten"]
+      }
+    },
+    {
+      "id": "neqTrue",
+      "expr": {
+        "kind": "call",
+        "ns": "core",
+        "name": "neq",
+        "args": ["five", "ten"]
+      }
+    },
+    {
+      "id": "neqFalse",
+      "expr": {
+        "kind": "call",
+        "ns": "core",
+        "name": "neq",
+        "args": ["five", "five"]
+      }
+    },
+    {
+      "id": "ltTrue",
+      "expr": {
+        "kind": "call",
+        "ns": "core",
+        "name": "lt",
+        "args": ["five", "ten"]
+      }
+    },
+    {
+      "id": "ltFalse",
+      "expr": {
+        "kind": "call",
+        "ns": "core",
+        "name": "lt",
+        "args": ["ten", "five"]
+      }
+    },
+    {
+      "id": "lteTrue",
+      "expr": {
+        "kind": "call",
+        "ns": "core",
+        "name": "lte",
+        "args": ["five", "five"]
+      }
+    },
+    {
+      "id": "lteFalse",
+      "expr": {
+        "kind": "call",
+        "ns": "core",
+        "name": "lte",
+        "args": ["ten", "five"]
+      }
+    },
+    {
+      "id": "gtTrue",
+      "expr": {
+        "kind": "call",
+        "ns": "core",
+        "name": "gt",
+        "args": ["ten", "five"]
+      }
+    },
+    {
+      "id": "gtFalse",
+      "expr": {
+        "kind": "call",
+        "ns": "core",
+        "name": "gt",
+        "args": ["five", "ten"]
+      }
+    },
+    {
+      "id": "gteTrue",
+      "expr": {
+        "kind": "call",
+        "ns": "core",
+        "name": "gte",
+        "args": ["ten", "ten"]
+      }
+    },
+    {
+      "id": "gteFalse",
+      "expr": {
+        "kind": "call",
+        "ns": "core",
+        "name": "gte",
+        "args": ["five", "ten"]
+      }
+    }
+  ],
+  "result": "gteFalse"
+}

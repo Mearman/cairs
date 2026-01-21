@@ -1,0 +1,195 @@
+{
+  "description": "Factorial using the fix combinator for recursion. The fix combinator enables self-reference by computing the least fixed point of a function. fix F = F (fix F), allowing the function F to receive itself as its first parameter, enabling recursion.",
+  "formula": "fix factorial_rec where factorial_rec = lambda rec. lambda n. if n <= 1 then 1 else n * rec(n-1)",
+  "example": "factorial(5) = 120",
+  "version": "1.0.0",
+  "airDefs": [
+    {
+      "ns": "core",
+      "name": "lte",
+      "params": ["a", "b"],
+      "result": { "kind": "bool" },
+      "body": { "kind": "ref", "id": "a" }
+    },
+    {
+      "ns": "core",
+      "name": "sub",
+      "params": ["a", "b"],
+      "result": { "kind": "int" },
+      "body": { "kind": "ref", "id": "a" }
+    },
+    {
+      "ns": "core",
+      "name": "multiply",
+      "params": ["a", "b"],
+      "result": { "kind": "int" },
+      "body": { "kind": "ref", "id": "a" }
+    }
+  ],
+  "nodes": [
+    {
+      "id": "one",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "int" },
+        "value": 1
+      }
+    },
+    {
+      "id": "five",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "int" },
+        "value": 5
+      }
+    },
+    {
+      "id": "factorialRec",
+      "expr": {
+        "kind": "lambda",
+        "params": ["rec"],
+        "body": "factorialInner",
+        "type": {
+          "kind": "fn",
+          "params": [{ "kind": "fn", "params": [{ "kind": "int" }], "returns": { "kind": "int" } }],
+          "returns": { "kind": "fn", "params": [{ "kind": "int" }], "returns": { "kind": "int" } }
+        }
+      }
+    },
+    {
+      "id": "factorialInner",
+      "expr": {
+        "kind": "lambda",
+        "params": ["n"],
+        "body": "factorialBody",
+        "type": {
+          "kind": "fn",
+          "params": [{ "kind": "int" }],
+          "returns": { "kind": "int" }
+        }
+      }
+    },
+    {
+      "id": "factorialBody",
+      "expr": {
+        "kind": "let",
+        "name": "isLeOne",
+        "value": "checkLeOne",
+        "body": "branchResult"
+      }
+    },
+    {
+      "id": "checkLeOne",
+      "expr": {
+        "kind": "call",
+        "ns": "core",
+        "name": "lte",
+        "args": ["n", "one"]
+      }
+    },
+    {
+      "id": "branchResult",
+      "expr": {
+        "kind": "if",
+        "cond": "isLeOne",
+        "then": "one",
+        "else": "recursiveCase",
+        "type": { "kind": "int" }
+      }
+    },
+    {
+      "id": "recursiveCase",
+      "expr": {
+        "kind": "let",
+        "name": "nMinusOne",
+        "value": "decrementN",
+        "body": "multiplyResult"
+      }
+    },
+    {
+      "id": "decrementN",
+      "expr": {
+        "kind": "call",
+        "ns": "core",
+        "name": "sub",
+        "args": ["n", "one"]
+      }
+    },
+    {
+      "id": "multiplyResult",
+      "expr": {
+        "kind": "let",
+        "name": "recResult",
+        "value": "recursiveCall",
+        "body": "finalMultiply"
+      }
+    },
+    {
+      "id": "recursiveCall",
+      "expr": {
+        "kind": "callExpr",
+        "fn": "rec",
+        "args": ["nMinusOne"]
+      }
+    },
+    {
+      "id": "finalMultiply",
+      "expr": {
+        "kind": "call",
+        "ns": "core",
+        "name": "multiply",
+        "args": ["n", "recResult"]
+      }
+    },
+    {
+      "id": "factorialFixed",
+      "expr": {
+        "kind": "fix",
+        "fn": "factorialRec",
+        "type": {
+          "kind": "fn",
+          "params": [{ "kind": "int" }],
+          "returns": { "kind": "int" }
+        }
+      }
+    },
+    {
+      "id": "result",
+      "expr": {
+        "kind": "callExpr",
+        "fn": "factorialFixed",
+        "args": ["five"]
+      }
+    }
+  ],
+  "result": "result",
+  "expected_result": 120,
+  "computation_trace": [
+    { "step": 1, "description": "fix factorialRec binds factorialRec to its own application" },
+    { "step": 2, "description": "factorialFixed = factorialRec(factorialFixed)" },
+    { "step": 3, "description": "Call factorialFixed(5)" },
+    { "step": 4, "n": 5, "check": "5 <= 1", "result": false, "action": "recursive case" },
+    { "step": 5, "description": "Compute 5 - 1 = 4" },
+    { "step": 6, "description": "Recursive call: rec(4) = factorialFixed(4)" },
+    { "step": 7, "n": 4, "check": "4 <= 1", "result": false, "action": "recursive case" },
+    { "step": 8, "description": "Compute 4 - 1 = 3" },
+    { "step": 9, "description": "Recursive call: rec(3) = factorialFixed(3)" },
+    { "step": 10, "n": 3, "check": "3 <= 1", "result": false, "action": "recursive case" },
+    { "step": 11, "description": "Compute 3 - 1 = 2" },
+    { "step": 12, "description": "Recursive call: rec(2) = factorialFixed(2)" },
+    { "step": 13, "n": 2, "check": "2 <= 1", "result": false, "action": "recursive case" },
+    { "step": 14, "description": "Compute 2 - 1 = 1" },
+    { "step": 15, "description": "Recursive call: rec(1) = factorialFixed(1)" },
+    { "step": 16, "n": 1, "check": "1 <= 1", "result": true, "action": "base case returns 1" },
+    { "step": 17, "description": "Unwind: 2 * 1 = 2" },
+    { "step": 18, "description": "Unwind: 3 * 2 = 6" },
+    { "step": 19, "description": "Unwind: 4 * 6 = 24" },
+    { "step": 20, "description": "Unwind: 5 * 24 = 120" }
+  ],
+  "notes": [
+    "The fix combinator solves the self-reference problem in lambda calculus",
+    "fix F expands to F(fix F), giving F access to itself via its first parameter",
+    "Type of fix: (T -> T) -> T for any type T",
+    "Here T = int -> int, so fix has type ((int -> int) -> (int -> int)) -> (int -> int)"
+  ]
+}

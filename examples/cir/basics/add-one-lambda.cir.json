@@ -1,0 +1,81 @@
+{
+  "version": "1.0.0",
+  "airDefs": [
+    {
+      "ns": "core",
+      "name": "add",
+      "params": ["a", "b"],
+      "result": { "kind": "int" },
+      "body": { "kind": "ref", "id": "a" }
+    }
+  ],
+  "nodes": [
+    {
+      "id": "one",
+      "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 1 }
+    },
+    {
+      "id": "five",
+      "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 5 }
+    },
+    {
+      "id": "ten",
+      "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 10 }
+    },
+    {
+      "id": "addOne",
+      "expr": {
+        "kind": "lambda",
+        "params": ["x"],
+        "body": "xPlusOne",
+        "type": {
+          "kind": "fn",
+          "params": [{ "kind": "int" }],
+          "returns": { "kind": "int" }
+        }
+      }
+    },
+    {
+      "id": "xPlusOne",
+      "expr": {
+        "kind": "call",
+        "ns": "core",
+        "name": "add",
+        "args": ["x", "one"]
+      }
+    },
+    {
+      "id": "applyToFive",
+      "expr": {
+        "kind": "callExpr",
+        "fn": "addOne",
+        "args": ["five"]
+      }
+    },
+    {
+      "id": "applyToTen",
+      "expr": {
+        "kind": "callExpr",
+        "fn": "addOne",
+        "args": ["ten"]
+      }
+    },
+    {
+      "id": "nestedCall",
+      "expr": {
+        "kind": "callExpr",
+        "fn": "addOne",
+        "args": ["applyToFive"]
+      }
+    },
+    {
+      "id": "doubleNested",
+      "expr": {
+        "kind": "callExpr",
+        "fn": "addOne",
+        "args": ["nestedCall"]
+      }
+    }
+  ],
+  "result": "doubleNested"
+}

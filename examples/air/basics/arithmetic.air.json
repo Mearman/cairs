@@ -1,0 +1,181 @@
+{
+  "version": "1.0.0",
+  "airDefs": [
+    {
+      "ns": "core",
+      "name": "add",
+      "params": ["a", "b"],
+      "result": { "kind": "int" },
+      "body": { "kind": "ref", "id": "a" }
+    },
+    {
+      "ns": "core",
+      "name": "sub",
+      "params": ["a", "b"],
+      "result": { "kind": "int" },
+      "body": { "kind": "ref", "id": "a" }
+    },
+    {
+      "ns": "core",
+      "name": "mul",
+      "params": ["a", "b"],
+      "result": { "kind": "int" },
+      "body": { "kind": "ref", "id": "a" }
+    },
+    {
+      "ns": "core",
+      "name": "div",
+      "params": ["a", "b"],
+      "result": { "kind": "int" },
+      "body": { "kind": "ref", "id": "a" }
+    },
+    {
+      "ns": "core",
+      "name": "mod",
+      "params": ["a", "b"],
+      "result": { "kind": "int" },
+      "body": { "kind": "ref", "id": "a" }
+    },
+    {
+      "ns": "core",
+      "name": "pow",
+      "params": ["a", "b"],
+      "result": { "kind": "int" },
+      "body": { "kind": "ref", "id": "a" }
+    },
+    {
+      "ns": "core",
+      "name": "neg",
+      "params": ["a"],
+      "result": { "kind": "int" },
+      "body": { "kind": "ref", "id": "a" }
+    }
+  ],
+  "nodes": [
+    {
+      "id": "ten",
+      "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 10 }
+    },
+    {
+      "id": "twenty",
+      "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 20 }
+    },
+    {
+      "id": "fifty",
+      "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 50 }
+    },
+    {
+      "id": "fifteen",
+      "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 15 }
+    },
+    {
+      "id": "six",
+      "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 6 }
+    },
+    {
+      "id": "seven",
+      "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 7 }
+    },
+    {
+      "id": "hundred",
+      "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 100 }
+    },
+    {
+      "id": "four",
+      "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 4 }
+    },
+    {
+      "id": "seventeen",
+      "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 17 }
+    },
+    {
+      "id": "five",
+      "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 5 }
+    },
+    {
+      "id": "two",
+      "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 2 }
+    },
+    {
+      "id": "eight",
+      "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 8 }
+    },
+    {
+      "id": "fortyTwo",
+      "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 42 }
+    },
+    {
+      "id": "addResult",
+      "expr": {
+        "kind": "call",
+        "ns": "core",
+        "name": "add",
+        "args": ["ten", "twenty"]
+      }
+    },
+    {
+      "id": "subResult",
+      "expr": {
+        "kind": "call",
+        "ns": "core",
+        "name": "sub",
+        "args": ["fifty", "fifteen"]
+      }
+    },
+    {
+      "id": "mulResult",
+      "expr": {
+        "kind": "call",
+        "ns": "core",
+        "name": "mul",
+        "args": ["six", "seven"]
+      }
+    },
+    {
+      "id": "divResult",
+      "expr": {
+        "kind": "call",
+        "ns": "core",
+        "name": "div",
+        "args": ["hundred", "four"]
+      }
+    },
+    {
+      "id": "modResult",
+      "expr": {
+        "kind": "call",
+        "ns": "core",
+        "name": "mod",
+        "args": ["seventeen", "five"]
+      }
+    },
+    {
+      "id": "powResult",
+      "expr": {
+        "kind": "call",
+        "ns": "core",
+        "name": "pow",
+        "args": ["two", "eight"]
+      }
+    },
+    {
+      "id": "negResult",
+      "expr": {
+        "kind": "call",
+        "ns": "core",
+        "name": "neg",
+        "args": ["fortyTwo"]
+      }
+    },
+    {
+      "id": "combined",
+      "expr": {
+        "kind": "call",
+        "ns": "core",
+        "name": "add",
+        "args": ["addResult", "mulResult"]
+      }
+    }
+  ],
+  "result": "combined"
+}

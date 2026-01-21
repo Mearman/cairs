@@ -1,0 +1,93 @@
+{
+  "version": "1.0.0",
+  "comment": [
+    "Demonstration of reusable arithmetic definitions using airDef and airRef.",
+    "Shows function definition (double, square), referencing, and composition."
+  ],
+  "airDefs": [
+    {
+      "ns": "math",
+      "name": "double",
+      "params": ["x"],
+      "result": { "kind": "int" },
+      "body": {
+        "kind": "call",
+        "ns": "core",
+        "name": "mul",
+        "args": ["x", "two"]
+      }
+    },
+    {
+      "ns": "math",
+      "name": "square",
+      "params": ["x"],
+      "result": { "kind": "int" },
+      "body": {
+        "kind": "call",
+        "ns": "core",
+        "name": "mul",
+        "args": ["x", "x"]
+      }
+    }
+  ],
+  "functionSigs": [
+    {
+      "ns": "core",
+      "name": "mul",
+      "params": [{ "kind": "int" }, { "kind": "int" }],
+      "returns": { "kind": "int" },
+      "pure": true
+    }
+  ],
+  "nodes": [
+    {
+      "id": "two",
+      "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 2 }
+    },
+    {
+      "id": "five",
+      "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 5 }
+    },
+    {
+      "id": "three",
+      "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 3 }
+    },
+    {
+      "id": "doubleResult",
+      "expr": {
+        "kind": "airRef",
+        "ns": "math",
+        "name": "double",
+        "args": ["five"]
+      }
+    },
+    {
+      "id": "squareResult",
+      "expr": {
+        "kind": "airRef",
+        "ns": "math",
+        "name": "square",
+        "args": ["three"]
+      }
+    },
+    {
+      "id": "doubleSquareResult",
+      "expr": {
+        "kind": "airRef",
+        "ns": "math",
+        "name": "double",
+        "args": ["squareResult"]
+      }
+    },
+    {
+      "id": "squareDoubleResult",
+      "expr": {
+        "kind": "airRef",
+        "ns": "math",
+        "name": "square",
+        "args": ["doubleResult"]
+      }
+    }
+  ],
+  "result": "squareDoubleResult"
+}

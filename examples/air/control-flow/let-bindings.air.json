@@ -1,0 +1,126 @@
+{
+  "version": "1.0.0",
+  "airDefs": [
+    {
+      "ns": "core",
+      "name": "mul",
+      "params": ["a", "b"],
+      "result": { "kind": "int" },
+      "body": { "kind": "ref", "id": "a" }
+    },
+    {
+      "ns": "core",
+      "name": "add",
+      "params": ["a", "b"],
+      "result": { "kind": "int" },
+      "body": { "kind": "ref", "id": "a" }
+    }
+  ],
+  "nodes": [
+    {
+      "id": "simpleLet",
+      "expr": {
+        "kind": "let",
+        "name": "x",
+        "value": {
+          "kind": "lit",
+          "type": { "kind": "int" },
+          "value": 10
+        },
+        "body": {
+          "kind": "call",
+          "ns": "core",
+          "name": "mul",
+          "args": [
+            { "kind": "ref", "id": "x" },
+            { "kind": "ref", "id": "x" }
+          ]
+        },
+        "type": { "kind": "int" }
+      }
+    },
+    {
+      "id": "multipleBindings",
+      "expr": {
+        "kind": "let",
+        "name": "x",
+        "value": {
+          "kind": "lit",
+          "type": { "kind": "int" },
+          "value": 5
+        },
+        "body": {
+          "kind": "let",
+          "name": "y",
+          "value": {
+            "kind": "lit",
+            "type": { "kind": "int" },
+            "value": 3
+          },
+          "body": {
+            "kind": "let",
+            "name": "z",
+            "value": {
+              "kind": "call",
+              "ns": "core",
+              "name": "mul",
+              "args": [
+                { "kind": "ref", "id": "x" },
+                { "kind": "ref", "id": "y" }
+              ]
+            },
+            "body": {
+              "kind": "call",
+              "ns": "core",
+              "name": "add",
+              "args": [
+                { "kind": "ref", "id": "z" },
+                { "kind": "ref", "id": "x" }
+              ]
+            },
+            "type": { "kind": "int" }
+          },
+          "type": { "kind": "int" }
+        },
+        "type": { "kind": "int" }
+      }
+    },
+    {
+      "id": "nestedComputation",
+      "expr": {
+        "kind": "let",
+        "name": "base",
+        "value": {
+          "kind": "lit",
+          "type": { "kind": "int" },
+          "value": 7
+        },
+        "body": {
+          "kind": "let",
+          "name": "squared",
+          "value": {
+            "kind": "call",
+            "ns": "core",
+            "name": "mul",
+            "args": [
+              { "kind": "ref", "id": "base" },
+              { "kind": "ref", "id": "base" }
+            ]
+          },
+          "body": {
+            "kind": "call",
+            "ns": "core",
+            "name": "mul",
+            "args": [
+              { "kind": "ref", "id": "squared" },
+              { "kind": "ref", "id": "base" }
+            ]
+          },
+          "type": { "kind": "int" }
+        },
+        "type": { "kind": "int" }
+      }
+    }
+  ],
+  "result": "nestedComputation"
+}

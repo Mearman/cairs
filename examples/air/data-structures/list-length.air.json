@@ -1,0 +1,66 @@
+{
+  "version": "1.0.0",
+  "airDefs": [
+    {
+      "ns": "list",
+      "name": "length",
+      "params": ["xs"],
+      "result": { "kind": "int" },
+      "body": { "kind": "ref", "id": "xs" }
+    }
+  ],
+  "nodes": [
+    {
+      "id": "numberList",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "list", "of": { "kind": "int" } },
+        "value": [1, 2, 3, 4, 5]
+      }
+    },
+    {
+      "id": "emptyList",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "list", "of": { "kind": "int" } },
+        "value": []
+      }
+    },
+    {
+      "id": "stringList",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "list", "of": { "kind": "string" } },
+        "value": ["a", "b", "c"]
+      }
+    },
+    {
+      "id": "numberListLength",
+      "expr": {
+        "kind": "call",
+        "ns": "list",
+        "name": "length",
+        "args": ["numberList"]
+      }
+    },
+    {
+      "id": "emptyListLength",
+      "expr": {
+        "kind": "call",
+        "ns": "list",
+        "name": "length",
+        "args": ["emptyList"]
+      }
+    },
+    {
+      "id": "stringListLength",
+      "expr": {
+        "kind": "call",
+        "ns": "list",
+        "name": "length",
+        "args": ["stringList"]
+      }
+    }
+  ],
+  "result": "stringListLength"
+}

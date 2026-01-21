@@ -1,0 +1,207 @@
+{
+  "description": "Iterative summation using the fix combinator demonstrating tail recursion. The fix combinator enables recursion by finding the fixed point of a function: fix(f) = f(fix(f)). This example computes the sum of numbers 1 to 10 using tail recursion: fix(lambda rec. lambda (acc, n). if n > 10 then acc else rec(acc+n, n+1))(0, 1) = 55. The tail recursive structure means each iteration accumulates the result in acc and recurses with incremented n, without needing to build up a call stack.",
+  "algorithm": "fix(lambda rec. lambda (acc, n). if n > 10 then acc else rec(acc+n, n+1))(0, 1)",
+  "example": "Sum 1 to 10 using tail recursion with fix = 55",
+  "version": "1.0.0",
+  "airDefs": [
+    {
+      "ns": "core",
+      "name": "add",
+      "params": ["a", "b"],
+      "result": { "kind": "int" },
+      "body": { "kind": "ref", "id": "a" }
+    },
+    {
+      "ns": "core",
+      "name": "gt",
+      "params": ["a", "b"],
+      "result": { "kind": "bool" },
+      "body": { "kind": "ref", "id": "a" }
+    },
+    {
+      "ns": "core",
+      "name": "inc",
+      "params": ["x"],
+      "result": { "kind": "int" },
+      "body": { "kind": "ref", "id": "x" }
+    }
+  ],
+  "nodes": [
+    {
+      "id": "zero",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "int" },
+        "value": 0
+      }
+    },
+    {
+      "id": "one",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "int" },
+        "value": 1
+      }
+    },
+    {
+      "id": "ten",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "int" },
+        "value": 10
+      }
+    },
+    {
+      "id": "fiftyFive",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "int" },
+        "value": 55
+      }
+    },
+    {
+      "id": "accVar",
+      "expr": {
+        "kind": "var",
+        "name": "acc"
+      }
+    },
+    {
+      "id": "nVar",
+      "expr": {
+        "kind": "var",
+        "name": "n"
+      }
+    },
+    {
+      "id": "recVar",
+      "expr": {
+        "kind": "var",
+        "name": "rec"
+      }
+    },
+    {
+      "id": "stepSum",
+      "expr": {
+        "kind": "call",
+        "ns": "core",
+        "name": "add",
+        "args": ["accVar", "nVar"]
+      }
+    },
+    {
+      "id": "nextN",
+      "expr": {
+        "kind": "call",
+        "ns": "core",
+        "name": "inc",
+        "args": ["nVar"]
+      }
+    },
+    {
+      "id": "isDone",
+      "expr": {
+        "kind": "call",
+        "ns": "core",
+        "name": "gt",
+        "args": ["nVar", "ten"]
+      }
+    },
+    {
+      "id": "recurseCall",
+      "expr": {
+        "kind": "callExpr",
+        "fn": "recVar",
+        "args": ["stepSum", "nextN"]
+      }
+    },
+    {
+      "id": "iterateBody",
+      "expr": {
+        "kind": "if",
+        "cond": "isDone",
+        "then": "accVar",
+        "else": "recurseCall",
+        "type": { "kind": "int" }
+      }
+    },
+    {
+      "id": "iterateLambda",
+      "expr": {
+        "kind": "lambda",
+        "params": ["rec"],
+        "body": "innerLambda",
+        "type": {
+          "kind": "fn",
+          "params": [
+            {
+              "kind": "fn",
+              "params": [{ "kind": "int" }, { "kind": "int" }],
+              "returns": { "kind": "int" }
+            }
+          ],
+          "returns": {
+            "kind": "fn",
+            "params": [{ "kind": "int" }, { "kind": "int" }],
+            "returns": { "kind": "int" }
+          }
+        }
+      }
+    },
+    {
+      "id": "innerLambda",
+      "expr": {
+        "kind": "lambda",
+        "params": ["acc", "n"],
+        "body": "iterateBody",
+        "type": {
+          "kind": "fn",
+          "params": [{ "kind": "int" }, { "kind": "int" }],
+          "returns": { "kind": "int" }
+        }
+      }
+    },
+    {
+      "id": "fixedIterator",
+      "expr": {
+        "kind": "fix",
+        "fn": "iterateLambda",
+        "type": {
+          "kind": "fn",
+          "params": [{ "kind": "int" }, { "kind": "int" }],
+          "returns": { "kind": "int" }
+        }
+      }
+    },
+    {
+      "id": "sumCall",
+      "expr": {
+        "kind": "callExpr",
+        "fn": "fixedIterator",
+        "args": ["zero", "one"]
+      }
+    },
+    {
+      "id": "result",
+      "expr": {
+        "kind": "ref",
+        "id": "sumCall"
+      }
+    }
+  ],
+  "result": "result",
+  "expected_result": 55,
+  "computation_trace": [
+    { "step": 1, "acc": 0, "n": 1, "n_gt_10": false, "computes": "rec(0+1, 2) = rec(1, 2)" },
+    { "step": 2, "acc": 1, "n": 2, "n_gt_10": false, "computes": "rec(1+2, 3) = rec(3, 3)" },
+    { "step": 3, "acc": 3, "n": 3, "n_gt_10": false, "computes": "rec(3+3, 4) = rec(6, 4)" },
+    { "step": 4, "acc": 6, "n": 4, "n_gt_10": false, "computes": "rec(6+4, 5) = rec(10, 5)" },
+    { "step": 5, "acc": 10, "n": 5, "n_gt_10": false, "computes": "rec(10+5, 6) = rec(15, 6)" },
+    { "step": 6, "acc": 15, "n": 6, "n_gt_10": false, "computes": "rec(15+6, 7) = rec(21, 7)" },
+    { "step": 7, "acc": 21, "n": 7, "n_gt_10": false, "computes": "rec(21+7, 8) = rec(28, 8)" },
+    { "step": 8, "acc": 28, "n": 8, "n_gt_10": false, "computes": "rec(28+8, 9) = rec(36, 9)" },
+    { "step": 9, "acc": 36, "n": 9, "n_gt_10": false, "computes": "rec(36+9, 10) = rec(45, 10)" },
+    { "step": 10, "acc": 45, "n": 10, "n_gt_10": false, "computes": "rec(45+10, 11) = rec(55, 11)" },
+    { "step": 11, "acc": 55, "n": 11, "n_gt_10": true, "returns": 55 }
+  ]
+}

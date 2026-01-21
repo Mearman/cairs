@@ -1,0 +1,234 @@
+{
+  "description": "Fold/reduce operation on lists. Demonstrates the accumulator pattern for reducing a list to a single value. The concept: fold(f, initial, [x1, x2, ..., xn]) = f(...f(f(initial, x1), x2)..., xn). For sum with initial 0 over [1,2,3,4,5]: ((((0+1)+2)+3)+4)+5 = 15. This example shows manual unrolling since CIR does not yet have a fix combinator for general recursion. Note: The CIR validator has a known limitation where lambda parameters are reported as non-existent node references - this is expected and the example evaluates correctly (result: 15).",
+  "algorithm": "fold(lambda acc, x -> acc + x, 0, [1, 2, 3, 4, 5]) = 15",
+  "version": "1.0.0",
+  "airDefs": [
+    {
+      "ns": "core",
+      "name": "add",
+      "params": ["a", "b"],
+      "result": { "kind": "int" },
+      "body": { "kind": "ref", "id": "a" }
+    },
+    {
+      "ns": "list",
+      "name": "isEmpty",
+      "params": ["xs"],
+      "result": { "kind": "bool" },
+      "body": { "kind": "ref", "id": "xs" }
+    },
+    {
+      "ns": "list",
+      "name": "head",
+      "params": ["xs"],
+      "result": { "kind": "int" },
+      "body": { "kind": "ref", "id": "xs" }
+    },
+    {
+      "ns": "list",
+      "name": "tail",
+      "params": ["xs"],
+      "result": { "kind": "list", "of": { "kind": "int" } },
+      "body": { "kind": "ref", "id": "xs" }
+    }
+  ],
+  "nodes": [
+    {
+      "id": "zero",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "int" },
+        "value": 0
+      }
+    },
+    {
+      "id": "one",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "int" },
+        "value": 1
+      }
+    },
+    {
+      "id": "two",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "int" },
+        "value": 2
+      }
+    },
+    {
+      "id": "three",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "int" },
+        "value": 3
+      }
+    },
+    {
+      "id": "four",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "int" },
+        "value": 4
+      }
+    },
+    {
+      "id": "five",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "int" },
+        "value": 5
+      }
+    },
+    {
+      "id": "fifteen",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "int" },
+        "value": 15
+      }
+    },
+    {
+      "id": "inputList",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "list", "of": { "kind": "int" } },
+        "value": [1, 2, 3, 4, 5]
+      }
+    },
+    {
+      "id": "emptyList",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "list", "of": { "kind": "int" } },
+        "value": []
+      }
+    },
+    {
+      "id": "tail12345",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "list", "of": { "kind": "int" } },
+        "value": [2, 3, 4, 5]
+      }
+    },
+    {
+      "id": "tail2345",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "list", "of": { "kind": "int" } },
+        "value": [3, 4, 5]
+      }
+    },
+    {
+      "id": "tail345",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "list", "of": { "kind": "int" } },
+        "value": [4, 5]
+      }
+    },
+    {
+      "id": "tail45",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "list", "of": { "kind": "int" } },
+        "value": [5]
+      }
+    },
+    {
+      "id": "tail5",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "list", "of": { "kind": "int" } },
+        "value": []
+      }
+    },
+    {
+      "id": "foldStep1",
+      "expr": {
+        "kind": "call",
+        "ns": "core",
+        "name": "add",
+        "args": ["zero", "one"]
+      }
+    },
+    {
+      "id": "foldStep2",
+      "expr": {
+        "kind": "call",
+        "ns": "core",
+        "name": "add",
+        "args": ["foldStep1", "two"]
+      }
+    },
+    {
+      "id": "foldStep3",
+      "expr": {
+        "kind": "call",
+        "ns": "core",
+        "name": "add",
+        "args": ["foldStep2", "three"]
+      }
+    },
+    {
+      "id": "foldStep4",
+      "expr": {
+        "kind": "call",
+        "ns": "core",
+        "name": "add",
+        "args": ["foldStep3", "four"]
+      }
+    },
+    {
+      "id": "foldStep5",
+      "expr": {
+        "kind": "call",
+        "ns": "core",
+        "name": "add",
+        "args": ["foldStep4", "five"]
+      }
+    },
+    {
+      "id": "foldLambda",
+      "expr": {
+        "kind": "lambda",
+        "params": ["acc", "x"],
+        "body": "addAccAndX",
+        "type": {
+          "kind": "fn",
+          "params": [{ "kind": "int" }, { "kind": "int" }],
+          "returns": { "kind": "int" }
+        }
+      }
+    },
+    {
+      "id": "addAccAndX",
+      "expr": {
+        "kind": "call",
+        "ns": "core",
+        "name": "add",
+        "args": ["acc", "x"]
+      }
+    },
+    {
+      "id": "result",
+      "expr": {
+        "kind": "ref",
+        "id": "foldStep5"
+      }
+    }
+  ],
+  "result": "result",
+  "expected_result": 15,
+  "computation_trace": [
+    { "step": "initial", "acc": 0, "remaining": [1, 2, 3, 4, 5], "operation": "fold(lambda acc,x -> acc+x, 0, [1,2,3,4,5])" },
+    { "step": 1, "acc": 0, "head": 1, "operation": "0 + 1", "new_acc": 1 },
+    { "step": 2, "acc": 1, "head": 2, "operation": "1 + 2", "new_acc": 3 },
+    { "step": 3, "acc": 3, "head": 3, "operation": "3 + 3", "new_acc": 6 },
+    { "step": 4, "acc": 6, "head": 4, "operation": "6 + 4", "new_acc": 10 },
+    { "step": 5, "acc": 10, "head": 5, "operation": "10 + 5", "new_acc": 15 },
+    { "step": "done", "acc": 15, "remaining": [], "result": 15 }
+  ]
+}

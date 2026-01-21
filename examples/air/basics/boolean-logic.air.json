@@ -1,0 +1,152 @@
+{
+  "version": "1.0.0",
+  "airDefs": [
+    {
+      "ns": "bool",
+      "name": "and",
+      "params": ["a", "b"],
+      "result": { "kind": "bool" },
+      "body": { "kind": "ref", "id": "a" }
+    },
+    {
+      "ns": "bool",
+      "name": "or",
+      "params": ["a", "b"],
+      "result": { "kind": "bool" },
+      "body": { "kind": "ref", "id": "a" }
+    },
+    {
+      "ns": "bool",
+      "name": "not",
+      "params": ["a"],
+      "result": { "kind": "bool" },
+      "body": { "kind": "ref", "id": "a" }
+    },
+    {
+      "ns": "bool",
+      "name": "xor",
+      "params": ["a", "b"],
+      "result": { "kind": "bool" },
+      "body": { "kind": "ref", "id": "a" }
+    }
+  ],
+  "nodes": [
+    {
+      "id": "trueVal",
+      "expr": { "kind": "lit", "type": { "kind": "bool" }, "value": true }
+    },
+    {
+      "id": "falseVal",
+      "expr": { "kind": "lit", "type": { "kind": "bool" }, "value": false }
+    },
+    {
+      "id": "trueAndTrue",
+      "expr": {
+        "kind": "call",
+        "ns": "bool",
+        "name": "and",
+        "args": ["trueVal", "trueVal"]
+      }
+    },
+    {
+      "id": "trueAndFalse",
+      "expr": {
+        "kind": "call",
+        "ns": "bool",
+        "name": "and",
+        "args": ["trueVal", "falseVal"]
+      }
+    },
+    {
+      "id": "falseAndFalse",
+      "expr": {
+        "kind": "call",
+        "ns": "bool",
+        "name": "and",
+        "args": ["falseVal", "falseVal"]
+      }
+    },
+    {
+      "id": "trueOrFalse",
+      "expr": {
+        "kind": "call",
+        "ns": "bool",
+        "name": "or",
+        "args": ["trueVal", "falseVal"]
+      }
+    },
+    {
+      "id": "falseOrFalse",
+      "expr": {
+        "kind": "call",
+        "ns": "bool",
+        "name": "or",
+        "args": ["falseVal", "falseVal"]
+      }
+    },
+    {
+      "id": "notTrue",
+      "expr": {
+        "kind": "call",
+        "ns": "bool",
+        "name": "not",
+        "args": ["trueVal"]
+      }
+    },
+    {
+      "id": "notFalse",
+      "expr": {
+        "kind": "call",
+        "ns": "bool",
+        "name": "not",
+        "args": ["falseVal"]
+      }
+    },
+    {
+      "id": "trueXorFalse",
+      "expr": {
+        "kind": "call",
+        "ns": "bool",
+        "name": "xor",
+        "args": ["trueVal", "falseVal"]
+      }
+    },
+    {
+      "id": "trueXorTrue",
+      "expr": {
+        "kind": "call",
+        "ns": "bool",
+        "name": "xor",
+        "args": ["trueVal", "trueVal"]
+      }
+    },
+    {
+      "id": "orOperand",
+      "expr": {
+        "kind": "call",
+        "ns": "bool",
+        "name": "or",
+        "args": ["trueVal", "falseVal"]
+      }
+    },
+    {
+      "id": "xorOperand",
+      "expr": {
+        "kind": "call",
+        "ns": "bool",
+        "name": "xor",
+        "args": ["trueVal", "falseVal"]
+      }
+    },
+    {
+      "id": "precedenceResult",
+      "expr": {
+        "kind": "call",
+        "ns": "bool",
+        "name": "and",
+        "args": ["orOperand", "xorOperand"]
+      }
+    }
+  ],
+  "result": "precedenceResult"
+}

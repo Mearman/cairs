@@ -11,8 +11,10 @@
 		"build": "tsc",
 		"test": "tsx --test \"test/*.ts\"",
 		"test:types": "tsc --noEmit -p tsconfig.test.json",
+		"test:examples": "tsx --test \"examples/*.ts\"",
 		"lint": "tsc --noEmit",
-		"ci": "pnpm lint && pnpm test:types && pnpm test"
+		"run-example": "tsx examples/cli.ts",
+		"ci": "pnpm lint && pnpm test:types && pnpm test && pnpm test:examples"
 	},
 	"devDependencies": {
 		"@types/node": "^22.10.5",
