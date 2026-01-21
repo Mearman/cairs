@@ -22,6 +22,16 @@ export type ErrorCode = (typeof ErrorCodes)[keyof typeof ErrorCodes];
 // Type Domain (Γ - static types)
 //==============================================================================
 
+// Forward declarations for EIR types (must be before Type union)
+export interface RefType {
+	kind: "ref";
+	of: Type;
+}
+
+export interface VoidType {
+	kind: "void";
+}
+
 export type Type =
 	| BoolType
 	| IntType
@@ -32,7 +42,9 @@ export type Type =
 	| MapType
 	| OptionType
 	| OpaqueType
-	| FnType; // CIR only
+	| FnType // CIR only
+	| RefType // EIR reference cell type
+	| VoidType; // EIR void type
 
 export interface BoolType {
 	kind: "bool";
@@ -86,6 +98,16 @@ export interface FnType {
 // Value Domain (v - runtime values)
 //==============================================================================
 
+// Forward declarations for EIR values (must be before Value union)
+export interface VoidVal {
+	kind: "void";
+}
+
+export interface RefCellVal {
+	kind: "refCell";
+	value: Value;
+}
+
 export type Value =
 	| BoolVal
 	| IntVal
@@ -97,6 +119,8 @@ export type Value =
 	| OptionVal
 	| OpaqueVal
 	| ClosureVal // CIR only
+	| VoidVal // EIR void value
+	| RefCellVal // EIR reference cell value
 	| ErrorVal; // Err(code, message?, meta?)
 
 export interface BoolVal {
@@ -157,6 +181,60 @@ export interface ErrorVal {
 	code: string;
 	message?: string;
 	meta?: Map<string, Value>;
+}
+
+//==============================================================================
+// EIR Evaluation State and Effects
+//==============================================================================
+
+/**
+ * Effect represents a side effect operation in EIR
+ */
+export interface Effect {
+	op: string;
+	args: Value[];
+}
+
+/**
+ * Evaluation state for EIR programs
+ * EIR requires mutable state for sequencing, loops, and effects
+ */
+export interface EvalState {
+	env: ValueEnv;
+	refCells: Map<string, Value>;
+	effects: Effect[];
+	steps: number;
+	maxSteps: number;
+}
+
+/**
+ * Create an empty evaluation state
+ */
+export function emptyEvalState(): EvalState {
+	return {
+		env: new Map(),
+		refCells: new Map(),
+		effects: [],
+		steps: 0,
+		maxSteps: 10000,
+	};
+}
+
+/**
+ * Create an evaluation state with initial values
+ */
+export function createEvalState(
+	env?: ValueEnv,
+	refCells?: Map<string, Value>,
+	maxSteps?: number,
+): EvalState {
+	return {
+		env: env ?? new Map(),
+		refCells: refCells ?? new Map(),
+		effects: [],
+		steps: 0,
+		maxSteps: maxSteps ?? 10000,
+	};
 }
 
 //==============================================================================
@@ -290,6 +368,167 @@ export interface CIRDocument extends AIRDocument {
 }
 
 //==============================================================================
+// EIR Types (Expression-based Imperative Representation)
+// Extends CIR with sequencing, mutation, effects, and loops
+//==============================================================================
+
+// EIR-specific expression types
+export interface EirSeqExpr {
+	kind: "seq";
+	first: string; // node id reference
+	then: string; // node id reference
+}
+
+export interface EirAssignExpr {
+	kind: "assign";
+	target: string; // mutable target identifier
+	value: string; // node id reference
+}
+
+export interface EirWhileExpr {
+	kind: "while";
+	cond: string;
+	body: string;
+}
+
+export interface EirForExpr {
+	kind: "for";
+	var: string;
+	init: string;
+	cond: string;
+	update: string;
+	body: string;
+}
+
+export interface EirIterExpr {
+	kind: "iter";
+	var: string;
+	iter: string;
+	body: string;
+}
+
+export interface EirEffectExpr {
+	kind: "effect";
+	op: string;
+	args: string[];
+}
+
+export interface EirRefCellExpr {
+	kind: "refCell";
+	target: string;
+}
+
+export interface EirDerefExpr {
+	kind: "deref";
+	target: string;
+}
+
+// EIR expression type - extends CIR expressions
+export type EirExpr = Expr | EirSeqExpr | EirAssignExpr | EirWhileExpr | EirForExpr | EirIterExpr | EirEffectExpr | EirRefCellExpr | EirDerefExpr;
+
+export interface EIRDocument extends CIRDocument {
+	// EIR documents can use seq, assign, loop (while/for/iter), effect, refCell, deref
+	// The document structure is the same as CIR, but nodes may contain EIR expressions
+}
+
+//==============================================================================
+// LIR Types (Low-level Intermediate Representation)
+// CFG-based representation with basic blocks, instructions, terminators
+//==============================================================================
+
+// LIR Instructions
+export interface LirInsAssign {
+	kind: "assign";
+	target: string;
+	value: Expr; // Can be CIR expression
+}
+
+export interface LirInsCall {
+	kind: "call";
+	target: string;
+	callee: string;
+	args: string[];
+}
+
+export interface LirInsOp {
+	kind: "op";
+	target: string;
+	ns: string;
+	name: string;
+	args: string[];
+}
+
+export interface LirInsPhi {
+	kind: "phi";
+	target: string;
+	sources: Array<{ block: string; id: string }>;
+}
+
+export interface LirInsEffect {
+	kind: "effect";
+	op: string;
+	args: string[];
+}
+
+export interface LirInsAssignRef {
+	kind: "assignRef";
+	target: string; // ref cell identifier
+	value: string; // node id to assign
+}
+
+export type LirInstruction =
+	| LirInsAssign
+	| LirInsCall
+	| LirInsOp
+	| LirInsPhi
+	| LirInsEffect
+	| LirInsAssignRef;
+
+// LIR Terminators
+export interface LirTermJump {
+	kind: "jump";
+	to: string;
+}
+
+export interface LirTermBranch {
+	kind: "branch";
+	cond: string;
+	then: string;
+	else: string;
+}
+
+export interface LirTermReturn {
+	kind: "return";
+	value?: string;
+}
+
+export interface LirTermExit {
+	kind: "exit";
+	code?: string;
+}
+
+export type LirTerminator =
+	| LirTermJump
+	| LirTermBranch
+	| LirTermReturn
+	| LirTermExit;
+
+// LIR Basic Block
+export interface LirBlock {
+	id: string;
+	instructions: LirInstruction[];
+	terminator: LirTerminator;
+}
+
+// LIR Document
+export interface LIRDocument {
+	version: string;
+	capabilities?: string[];
+	blocks: LirBlock[];
+	entry: string; // entry block id
+}
+
+//==============================================================================
 // Related Types
 //==============================================================================
 
@@ -329,12 +568,21 @@ export function isClosure(v: Value): v is ClosureVal {
 	return v.kind === "closure";
 }
 
+export function isRefCell(v: Value): v is RefCellVal {
+	return v.kind === "refCell";
+}
+
+export function isVoid(v: Value): v is VoidVal {
+	return v.kind === "void";
+}
+
 export function isPrimitiveType(t: Type): boolean {
 	return (
 		t.kind === "bool" ||
 		t.kind === "int" ||
 		t.kind === "float" ||
-		t.kind === "string"
+		t.kind === "string" ||
+		t.kind === "void"
 	);
 }
 
@@ -350,11 +598,13 @@ export function typeEqual(a: Type, b: Type): boolean {
 		case "int":
 		case "float":
 		case "string":
+		case "void":
 			return true;
 		case "set":
 		case "list":
 		case "option":
-			return typeEqual(a.of, (b as SetType | ListType | OptionType).of);
+		case "ref":
+			return typeEqual(a.of, (b as SetType | ListType | OptionType | RefType).of);
 		case "map":
 			return (
 				typeEqual(a.key, (b as MapType).key) &&
@@ -415,6 +665,13 @@ export const errorVal = (
 	return result;
 };
 
+// EIR value constructors
+export const voidVal = (): VoidVal => ({ kind: "void" });
+export const refCellVal = (value: Value): RefCellVal => ({
+	kind: "refCell",
+	value,
+});
+
 //==============================================================================
 // Type Constructors
 //==============================================================================
@@ -440,3 +697,7 @@ export const fnType = (params: Type[], returns: Type): FnType => ({
 	params,
 	returns,
 });
+
+// EIR type constructors
+export const voidType: VoidType = { kind: "void" };
+export const refType = (of: Type): RefType => ({ kind: "ref", of });
