@@ -76,7 +76,8 @@ CAIRS separates **algebraic meaning** from **computational process**, enabling d
 
 - **AIR (Algebraic Intermediate Representation)** — pure, declarative algebraic expressions
 - **CIR (Computational Intermediate Representation)** — extends AIR with computational constructs
-- **EIR (Execution Intermediate Representation)** — reserved for future work
+- **EIR (Execution Intermediate Representation)** — extends CIR with imperative features
+- **LIR (Low-Level Intermediate Representation)** — CFG-based representation for code generation
 
 ---
 
@@ -93,7 +94,8 @@ The key words **MUST**, **MUST NOT**, **SHOULD**, **SHOULD NOT**, and **MAY** ar
 | **CAIRS**         | Computational Algebraic & Iterative Representation System                    |
 | **AIR**           | Algebraic Intermediate Representation                                        |
 | **CIR**           | Computational Intermediate Representation                                    |
-| **EIR**           | Execution Intermediate Representation (future work)                          |
+| **EIR**           | Execution Intermediate Representation                                        |
+| **LIR**           | Low-Level Intermediate Representation                                        |
 | **Expression**    | A structured representation that evaluates to a value                        |
 | **Operator**      | A named, typed transformation over values                                    |
 | **Domain module** | A namespaced collection of operators and types (e.g. `bool`, `set`, `graph`) |
@@ -128,7 +130,8 @@ CAIRS is a layered system:
 CAIRS
  ├── AIR  (Algebraic IR)
  ├── CIR  (Computational IR)
- └── EIR  (Execution IR) [Reserved]
+ ├── EIR  (Execution IR)
+ └── LIR  (Low-Level IR)
 ```
 
 Each layer is a semantic superset of the layer above it.
@@ -623,6 +626,333 @@ CIR uses the AIR rules plus:
 
 ---
 
+### 9.6 EIR Semantic Domains
+
+EIR extends CIR values with:
+
+| Constructor  | Description            |
+| ------------ | ---------------------- |
+| `Void`       | Unit value             |
+| `RefCell(v)` | Mutable reference cell |
+
+EIR evaluation state is a 4-tuple:
+
+```
+EvalState = (ρ, σ, ε, n)
+```
+
+Where:
+
+- `ρ : ValueEnv` — variable bindings (as in CIR)
+- `σ : Map<String, Value>` — reference cell store
+- `ε : Effect[]` — recorded effects
+- `n : Int` — step counter (for termination checking)
+
+---
+
+### 9.7 EIR Typing Rules
+
+EIR includes all CIR typing rules plus:
+
+#### T-Seq (Sequence)
+
+```
+Γ ⊢ first : τ₁    Γ ⊢ then : τ₂
+────────────────────────────────
+Γ ⊢ seq(first, then) : τ₂
+```
+
+#### T-Assign (Assignment)
+
+```
+Γ ⊢ value : τ
+─────────────────────────────
+Γ ⊢ assign(target, value) : Void
+```
+
+#### T-While (While Loop)
+
+```
+Γ ⊢ cond : Bool    Γ ⊢ body : τ
+────────────────────────────────
+Γ ⊢ while(cond, body) : Void
+```
+
+#### T-For (C-Style For Loop)
+
+```
+Γ ⊢ init : τ₁    Γ ⊢ cond : Bool    Γ ⊢ update : τ₂    Γ ⊢ body : τ₃
+─────────────────────────────────────────────────────────────────────
+Γ ⊢ for(var, init, cond, update, body) : Void
+```
+
+#### T-Iter (Iterator Loop)
+
+```
+Γ ⊢ iter : List(τ)    Γ[var↦τ] ⊢ body : τ'
+───────────────────────────────────────────
+Γ ⊢ iter(var, iter, body) : Void
+```
+
+#### T-Effect (Side Effect)
+
+Let `effect_op : (τ₁,…,τₙ) → τ`.
+
+```
+∀i. Γ ⊢ argᵢ : τᵢ
+──────────────────────────────
+Γ ⊢ effect(op, arg₁,…,argₙ) : τ
+```
+
+#### T-RefCell (Reference Cell)
+
+```
+Γ ⊢ target : τ
+──────────────────────────
+Γ ⊢ refCell(target) : Ref(τ)
+```
+
+#### T-Deref (Dereference)
+
+```
+Γ ⊢ target : Ref(τ)
+────────────────────
+Γ ⊢ deref(target) : τ
+```
+
+---
+
+### 9.8 EIR Evaluation Rules
+
+EIR evaluation threads state through computations:
+
+```
+ρ, σ ⊢ e ⇓ v, σ'
+```
+
+Expression `e` under environment `ρ` and store `σ` evaluates to value `v`, producing updated store `σ'`.
+
+#### E-Seq (Sequence)
+
+```
+ρ, σ ⊢ first ⇓ v₁, σ₁    ρ, σ₁ ⊢ then ⇓ v₂, σ₂
+──────────────────────────────────────────────
+ρ, σ ⊢ seq(first, then) ⇓ v₂, σ₂
+```
+
+#### E-Assign (Assignment)
+
+```
+ρ, σ ⊢ value ⇓ v, σ'
+────────────────────────────────────────
+ρ, σ ⊢ assign(target, value) ⇓ Void, σ'[target↦v]
+```
+
+#### E-WhileT (While - True)
+
+```
+ρ, σ ⊢ cond ⇓ Bool(true), σ₁
+ρ, σ₁ ⊢ body ⇓ v, σ₂
+ρ, σ₂ ⊢ while(cond, body) ⇓ v', σ₃
+─────────────────────────────────────
+ρ, σ ⊢ while(cond, body) ⇓ v', σ₃
+```
+
+#### E-WhileF (While - False)
+
+```
+ρ, σ ⊢ cond ⇓ Bool(false), σ'
+────────────────────────────────────
+ρ, σ ⊢ while(cond, body) ⇓ Void, σ'
+```
+
+#### E-For (For Loop)
+
+```
+ρ, σ ⊢ init ⇓ v₀, σ₀
+ρ[var↦v₀], σ₀ ⊢ forLoop(cond, update, body) ⇓ v, σ'
+────────────────────────────────────────────────────
+ρ, σ ⊢ for(var, init, cond, update, body) ⇓ v, σ'
+```
+
+Where `forLoop` iterates: check condition, execute body, execute update, repeat.
+
+#### E-Iter (Iterator)
+
+```
+ρ, σ ⊢ iter ⇓ List([v₁,…,vₙ]), σ₀
+ρ[var↦v₁], σ₀ ⊢ body ⇓ _, σ₁
+...
+ρ[var↦vₙ], σₙ₋₁ ⊢ body ⇓ _, σₙ
+────────────────────────────────────
+ρ, σ ⊢ iter(var, iter, body) ⇓ Void, σₙ
+```
+
+#### E-Effect (Effect Execution)
+
+```
+∀i. ρ, σᵢ₋₁ ⊢ argᵢ ⇓ vᵢ, σᵢ
+execute_effect(op, v₁,…,vₙ) = (v, eff)
+────────────────────────────────────────
+ρ, σ ⊢ effect(op, arg₁,…,argₙ) ⇓ v, σₙ ∪ {eff}
+```
+
+#### E-RefCell (Create Reference)
+
+```
+σ(target) = v
+────────────────────────────
+ρ, σ ⊢ refCell(target) ⇓ RefCell(v), σ
+```
+
+#### E-Deref (Read Reference)
+
+```
+ρ, σ ⊢ target ⇓ RefCell(v), σ'
+─────────────────────────────
+ρ, σ ⊢ deref(target) ⇓ v, σ'
+```
+
+---
+
+### 9.9 LIR Semantic Domains
+
+LIR uses a different execution model based on control-flow graphs.
+
+LIR execution state is a 4-tuple:
+
+```
+LIRState = (V, r, ε, n)
+```
+
+Where:
+
+- `V : Map<String, Value>` — SSA variable bindings
+- `r : Option<Value>` — return value (when computation terminates)
+- `ε : Effect[]` — recorded effects
+- `n : Int` — step counter
+
+A basic block is a triple:
+
+```
+Block = (id, instructions, terminator)
+```
+
+Where:
+
+- `id : String` — unique block identifier
+- `instructions : Instruction[]` — sequence of instructions
+- `terminator : Terminator` — control flow decision
+
+---
+
+### 9.10 LIR Execution Semantics
+
+#### Block Execution
+
+Block transitions:
+
+```
+⟨B, V⟩ → ⟨B', V'⟩    (block B with vars V transitions to block B' with vars V')
+⟨B, V⟩ → v           (block B with vars V terminates with value v)
+```
+
+#### Instruction Semantics
+
+##### I-Assign (Assignment)
+
+```
+V' = V[target ↦ eval(value, V)]
+───────────────────────────────
+⟨assign(target, value) :: rest, V⟩ → ⟨rest, V'⟩
+```
+
+##### I-Op (Operator Application)
+
+```
+v = ⟦op⟧(V(arg₁), …, V(argₙ))
+V' = V[target ↦ v]
+────────────────────────────────────────
+⟨op(target, ns, name, args) :: rest, V⟩ → ⟨rest, V'⟩
+```
+
+##### I-Phi (Phi Node)
+
+```
+sourceᵢ.block = predecessor
+V' = V[target ↦ V(sourceᵢ.id)]
+──────────────────────────────────────────
+⟨phi(target, sources) :: rest, V, pred⟩ → ⟨rest, V'⟩
+```
+
+##### I-Effect (Effect Instruction)
+
+```
+execute_effect(op, V(arg₁), …, V(argₙ)) = (v, eff)
+V' = V[target ↦ v]    ε' = ε ∪ {eff}
+─────────────────────────────────────────────────
+⟨effect(target, op, args) :: rest, V, ε⟩ → ⟨rest, V', ε'⟩
+```
+
+##### I-AssignRef (Reference Assignment)
+
+```
+σ' = σ[target ↦ V(value)]
+─────────────────────────────────────────
+⟨assignRef(target, value) :: rest, V, σ⟩ → ⟨rest, V, σ'⟩
+```
+
+#### Terminator Semantics
+
+##### T-Jump (Unconditional Jump)
+
+```
+──────────────────────────
+⟨jump(to), V⟩ → ⟨block(to), V⟩
+```
+
+##### T-Branch (Conditional Branch)
+
+```
+V(cond) = Bool(true)
+───────────────────────────────────
+⟨branch(cond, then, else), V⟩ → ⟨block(then), V⟩
+```
+
+```
+V(cond) = Bool(false)
+───────────────────────────────────
+⟨branch(cond, then, else), V⟩ → ⟨block(else), V⟩
+```
+
+##### T-Return (Return)
+
+```
+v = V(value)    (or Void if value absent)
+─────────────────────────────────────────
+⟨return(value), V⟩ → v
+```
+
+##### T-Exit (Exit with Code)
+
+```
+v = V(code)    (or Void if code absent)
+─────────────────────────────────────────
+⟨exit(code), V⟩ → v
+```
+
+#### Phi Node Resolution
+
+Phi nodes select values based on the predecessor block:
+
+```
+φ((b₁, x₁), …, (bₙ, xₙ)) = V(xᵢ)    where bᵢ was immediate predecessor
+```
+
+This is critical for SSA form: when control flows from block `bᵢ` to the current block, the phi node resolves to the value `V(xᵢ)` associated with that predecessor.
+
+---
+
 ## 10. Error Handling
 
 ### 10.1 Error Domain
@@ -856,6 +1186,17 @@ Every AIR expression and document MUST be a valid CIR expression and document.
 ### A.4 CIR Respect for AIR Semantics
 
 CIR MUST NOT alter the meaning of AIR operators or AIR definitions.
+
+### A.5 EIR Superset
+
+Every CIR expression and document MUST be a valid EIR expression and document.
+
+### A.6 LIR Lowering Correctness
+
+EIR documents MAY be lowered to LIR. The lowering MUST preserve observable behavior:
+
+- Same final result value
+- Same sequence of effects
 
 ---
 
