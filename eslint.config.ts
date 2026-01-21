@@ -20,8 +20,9 @@ export default [
 	// Base ESLint recommended rules
 	eslint.configs.recommended,
 
-	// TypeScript (type-aware)
-	...tseslint.configs.recommendedTypeChecked,
+	// TypeScript (strict type-aware)
+	...tseslint.configs.strictTypeChecked,
+	...tseslint.configs.stylisticTypeChecked,
 	{
 		languageOptions: {
 			parserOptions: {
