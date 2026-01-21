@@ -97,6 +97,45 @@ const reverse: Operator = defineOperator("list", "reverse")
 	})
 	.build();
 
+// slice(list<A>, int) -> list<A>
+// Returns elements from index onwards (like xs.slice(n))
+const slice: Operator = defineOperator("list", "slice")
+	.setParams(listType({ kind: "int" } as Type), intType)
+	.setReturns(listType({ kind: "int" } as Type))
+	.setPure(true)
+	.setImpl((a, b) => {
+		if (isError(a)) return a;
+		if (isError(b)) return b;
+		if (a.kind !== "list") {
+			return errorVal(ErrorCodes.TypeError, "Expected list value");
+		}
+		if (b.kind !== "int") {
+			return errorVal(ErrorCodes.TypeError, "Expected int index");
+		}
+		const idx = b.value;
+		if (idx < 0) {
+			return errorVal(ErrorCodes.DomainError, "Index must be non-negative: " + String(idx));
+		}
+		return listVal(a.value.slice(idx));
+	})
+	.build();
+
+// cons(A, list<A>) -> list<A>
+// Prepends element to the front of the list
+const cons: Operator = defineOperator("list", "cons")
+	.setParams({ kind: "int" } as Type, listType({ kind: "int" } as Type))
+	.setReturns(listType({ kind: "int" } as Type))
+	.setPure(true)
+	.setImpl((a, b) => {
+		if (isError(a)) return a;
+		if (isError(b)) return b;
+		if (b.kind !== "list") {
+			return errorVal(ErrorCodes.TypeError, "Expected list value for second argument");
+		}
+		return listVal([a, ...b.value]);
+	})
+	.build();
+
 // fold(list<A>, B, fn(A, B) -> B) -> B
 // For now, implemented as a simplified version that takes (list, initial) -> initial
 // The actual folding will be done in the evaluator with closure support
@@ -121,6 +160,8 @@ export function createListRegistry(): OperatorRegistry {
 	registry = registerOperator(registry, concat);
 	registry = registerOperator(registry, nth);
 	registry = registerOperator(registry, reverse);
+	registry = registerOperator(registry, slice);
+	registry = registerOperator(registry, cons);
 
 	return registry;
 }
