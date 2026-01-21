@@ -911,7 +911,3 @@ Comparison:
 - `add(s, x)` — add element
 - `remove(s, x)` — remove element
 - `size(s)` — cardinality
-
----
-
-_Copyright © 2025 CAIRS Working Group_
