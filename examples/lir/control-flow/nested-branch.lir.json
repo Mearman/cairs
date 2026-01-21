@@ -1,0 +1,120 @@
+{
+  "version": "1.0.0",
+  "description": "Demonstrates nested branching in LIR CFG. The then and else blocks can themselves contain branches.",
+  "blocks": [
+    {
+      "id": "entry",
+      "instructions": [
+        {
+          "kind": "assign",
+          "target": "x",
+          "value": { "kind": "lit", "type": { "kind": "int" }, "value": 10 }
+        },
+        {
+          "kind": "assign",
+          "target": "y",
+          "value": { "kind": "lit", "type": { "kind": "int" }, "value": 20 }
+        },
+        {
+          "kind": "assign",
+          "target": "limit",
+          "value": { "kind": "lit", "type": { "kind": "int" }, "value": 15 }
+        },
+        {
+          "kind": "op",
+          "target": "xOk",
+          "ns": "core",
+          "name": "gt",
+          "args": ["x", "limit"]
+        }
+      ],
+      "terminator": {
+        "kind": "branch",
+        "cond": "xOk",
+        "then": "checkY",
+        "else": "xFailed"
+      }
+    },
+    {
+      "id": "checkY",
+      "instructions": [
+        {
+          "kind": "op",
+          "target": "yOk",
+          "ns": "core",
+          "name": "gt",
+          "args": ["y", "limit"]
+        }
+      ],
+      "terminator": {
+        "kind": "branch",
+        "cond": "yOk",
+        "then": "bothPassed",
+        "else": "yFailed"
+      }
+    },
+    {
+      "id": "bothPassed",
+      "instructions": [
+        {
+          "kind": "assign",
+          "target": "status",
+          "value": { "kind": "lit", "type": { "kind": "string" }, "value": "both passed" }
+        }
+      ],
+      "terminator": {
+        "kind": "jump",
+        "to": "exit"
+      }
+    },
+    {
+      "id": "xFailed",
+      "instructions": [
+        {
+          "kind": "assign",
+          "target": "status",
+          "value": { "kind": "lit", "type": { "kind": "string" }, "value": "x failed" }
+        }
+      ],
+      "terminator": {
+        "kind": "jump",
+        "to": "exit"
+      }
+    },
+    {
+      "id": "yFailed",
+      "instructions": [
+        {
+          "kind": "assign",
+          "target": "status",
+          "value": { "kind": "lit", "type": { "kind": "string" }, "value": "y failed" }
+        }
+      ],
+      "terminator": {
+        "kind": "jump",
+        "to": "exit"
+      }
+    },
+    {
+      "id": "exit",
+      "instructions": [
+        {
+          "kind": "phi",
+          "target": "result",
+          "sources": [
+            { "block": "bothPassed", "id": "status" },
+            { "block": "xFailed", "id": "status" },
+            { "block": "yFailed", "id": "status" }
+          ]
+        }
+      ],
+      "terminator": {
+        "kind": "return",
+        "value": "result"
+      }
+    }
+  ],
+  "entry": "entry",
+  "expected_result": "y failed",
+  "note": "Nested branch: entry checks x>15 (false, goes to xFailed), xFailed jumps to exit with 'x failed'. Wait: x=10, so x>15 is false. Actually xFailed is correct path."
+}

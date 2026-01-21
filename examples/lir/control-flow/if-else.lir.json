@@ -1,0 +1,92 @@
+{
+  "version": "1.0.0",
+  "description": "Demonstrates if-then-else pattern in LIR CFG. Each branch is a separate block that merges back at a join point.",
+  "blocks": [
+    {
+      "id": "entry",
+      "instructions": [
+        {
+          "kind": "assign",
+          "target": "value",
+          "value": { "kind": "lit", "type": { "kind": "int" }, "value": 42 }
+        },
+        {
+          "kind": "assign",
+          "target": "threshold",
+          "value": { "kind": "lit", "type": { "kind": "int" }, "value": 50 }
+        },
+        {
+          "kind": "op",
+          "target": "isAbove",
+          "ns": "core",
+          "name": "gt",
+          "args": ["value", "threshold"]
+        }
+      ],
+      "terminator": {
+        "kind": "branch",
+        "cond": "isAbove",
+        "then": "thenBlock",
+        "else": "elseBlock"
+      }
+    },
+    {
+      "id": "thenBlock",
+      "instructions": [
+        {
+          "kind": "assign",
+          "target": "result",
+          "value": { "kind": "lit", "type": { "kind": "string" }, "value": "above threshold" }
+        },
+        {
+          "kind": "assign",
+          "target": "branchTaken",
+          "value": { "kind": "lit", "type": { "kind": "string" }, "value": "then" }
+        }
+      ],
+      "terminator": {
+        "kind": "jump",
+        "to": "merge"
+      }
+    },
+    {
+      "id": "elseBlock",
+      "instructions": [
+        {
+          "kind": "assign",
+          "target": "result",
+          "value": { "kind": "lit", "type": { "kind": "string" }, "value": "below threshold" }
+        },
+        {
+          "kind": "assign",
+          "target": "branchTaken",
+          "value": { "kind": "lit", "type": { "kind": "string" }, "value": "else" }
+        }
+      ],
+      "terminator": {
+        "kind": "jump",
+        "to": "merge"
+      }
+    },
+    {
+      "id": "merge",
+      "instructions": [
+        {
+          "kind": "phi",
+          "target": "finalResult",
+          "sources": [
+            { "block": "thenBlock", "id": "result" },
+            { "block": "elseBlock", "id": "result" }
+          ]
+        }
+      ],
+      "terminator": {
+        "kind": "return",
+        "value": "finalResult"
+      }
+    }
+  ],
+  "entry": "entry",
+  "expected_result": "below threshold",
+  "note": "If-then-else as CFG: entry branches to thenBlock or elseBlock based on condition, both merge at merge block."
+}

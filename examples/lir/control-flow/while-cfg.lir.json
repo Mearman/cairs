@@ -1,0 +1,103 @@
+{
+  "version": "1.0.0",
+  "description": "Demonstrates a while loop structured as CFG. The loop has a header block with condition check, body block, and exit block.",
+  "blocks": [
+    {
+      "id": "entry",
+      "instructions": [
+        {
+          "kind": "assign",
+          "target": "counter",
+          "value": { "kind": "lit", "type": { "kind": "int" }, "value": 0 }
+        },
+        {
+          "kind": "assign",
+          "target": "sum",
+          "value": { "kind": "lit", "type": { "kind": "int" }, "value": 0 }
+        }
+      ],
+      "terminator": {
+        "kind": "jump",
+        "to": "loopHeader"
+      }
+    },
+    {
+      "id": "loopHeader",
+      "instructions": [
+        {
+          "kind": "assign",
+          "target": "limit",
+          "value": { "kind": "lit", "type": { "kind": "int" }, "value": 5 }
+        },
+        {
+          "kind": "op",
+          "target": "shouldContinue",
+          "ns": "core",
+          "name": "lt",
+          "args": ["counter", "limit"]
+        }
+      ],
+      "terminator": {
+        "kind": "branch",
+        "cond": "shouldContinue",
+        "then": "loopBody",
+        "else": "loopExit"
+      }
+    },
+    {
+      "id": "loopBody",
+      "instructions": [
+        {
+          "kind": "assign",
+          "target": "one",
+          "value": { "kind": "lit", "type": { "kind": "int" }, "value": 1 }
+        },
+        {
+          "kind": "op",
+          "target": "newSum",
+          "ns": "core",
+          "name": "add",
+          "args": ["sum", "counter"]
+        },
+        {
+          "kind": "assign",
+          "target": "sum",
+          "value": { "kind": "var", "name": "newSum" }
+        },
+        {
+          "kind": "op",
+          "target": "nextCounter",
+          "ns": "core",
+          "name": "add",
+          "args": ["counter", "one"]
+        },
+        {
+          "kind": "assign",
+          "target": "counter",
+          "value": { "kind": "var", "name": "nextCounter" }
+        }
+      ],
+      "terminator": {
+        "kind": "jump",
+        "to": "loopHeader"
+      }
+    },
+    {
+      "id": "loopExit",
+      "instructions": [
+        {
+          "kind": "assign",
+          "target": "finalSum",
+          "value": { "kind": "var", "name": "sum" }
+        }
+      ],
+      "terminator": {
+        "kind": "return",
+        "value": "finalSum"
+      }
+    }
+  ],
+  "entry": "entry",
+  "expected_result": 10,
+  "note": "While loop CFG: accumulates 0+1+2+3+4 = 10. Back-edge from loopBody to loopHeader creates the loop."
+}
