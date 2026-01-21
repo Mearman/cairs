@@ -3,7 +3,7 @@
 
 import type { ValueEnv } from "../env.js";
 import { exhaustive } from "../errors.js";
-import type { Expr } from "../types.js";
+import type { Expr, Value } from "../types.js";
 
 //==============================================================================
 // Fresh Name Generation
@@ -45,97 +45,97 @@ function substituteExpr(
 	boundVars: Set<string>,
 ): Expr {
 	switch (expr.kind) {
-		case "lit":
-		case "ref":
-			// These expressions don't contain variables
+	case "lit":
+	case "ref":
+		// These expressions don't contain variables
+		return expr;
+
+	case "var":
+		// If this is the variable we're substituting, return the value
+		if (expr.name === varName && !boundVars.has(varName)) {
+			return value;
+		}
+		return expr;
+
+	case "call":
+		// Substitute in arguments (but call itself is a value reference)
+		return { ...expr };
+
+	case "if":
+		return {
+			...expr,
+			// Branches are node refs, not expressions, so no substitution needed
+		};
+
+	case "let":
+		// If the bound name is the one we're substituting, shadow it
+		const newLetBoundVars = new Set(boundVars);
+		newLetBoundVars.add(expr.name);
+		return {
+			...expr,
+			// Value and body are node refs, not expressions
+		};
+
+	case "airRef":
+		return { ...expr };
+
+	case "predicate":
+		return { ...expr };
+
+	case "lambda":
+		// Check if varName is captured by lambda parameters
+		if (expr.params.includes(varName)) {
+			// varName is bound by this lambda, so free occurrences inside are not the same
 			return expr;
+		}
 
-		case "var":
-			// If this is the variable we're substituting, return the value
-			if (expr.name === varName && !boundVars.has(varName)) {
-				return value;
-			}
-			return expr;
+		// Check if any of the lambda's parameters occur free in value
+		const paramsSet = new Set(expr.params);
+		const capturedInValue = collectFreeVars(value, new Set()).filter((v) =>
+			paramsSet.has(v),
+		);
 
-		case "call":
-			// Substitute in arguments (but call itself is a value reference)
-			return { ...expr };
-
-		case "if":
+		if (capturedInValue.length === 0) {
+			// No capture, can substitute directly
 			return {
 				...expr,
-				// Branches are node refs, not expressions, so no substitution needed
+				// Body is a node ref, not an expression
 			};
+		}
 
-		case "let":
-			// If the bound name is the one we're substituting, shadow it
-			const newLetBoundVars = new Set(boundVars);
-			newLetBoundVars.add(expr.name);
-			return {
-				...expr,
-				// Value and body are node refs, not expressions
-			};
+		// Capture would occur! Need to alpha-rename the lambda parameters
+		const newParams: string[] = [];
+		const paramRenaming = new Map<string, string>();
 
-		case "airRef":
-			return { ...expr };
-
-		case "predicate":
-			return { ...expr };
-
-		case "lambda":
-			// Check if varName is captured by lambda parameters
-			if (expr.params.includes(varName)) {
-				// varName is bound by this lambda, so free occurrences inside are not the same
-				return expr;
+		for (const param of expr.params) {
+			if (capturedInValue.includes(param)) {
+				// This parameter would be captured, rename it
+				const newName = freshName(
+					param,
+					new Set([...paramsSet, ...boundVars, varName]),
+				);
+				newParams.push(newName);
+				paramRenaming.set(param, newName);
+			} else {
+				newParams.push(param);
 			}
+		}
 
-			// Check if any of the lambda's parameters occur free in value
-			const paramsSet = new Set(expr.params);
-			const capturedInValue = collectFreeVars(value, new Set()).filter((v) =>
-				paramsSet.has(v),
-			);
+		if (paramRenaming.size === 0) {
+			return expr;
+		}
 
-			if (capturedInValue.length === 0) {
-				// No capture, can substitute directly
-				return {
-					...expr,
-					// Body is a node ref, not an expression
-				};
-			}
+		// Apply alpha renaming
+		return alphaRenameExpr(expr, new Set(), paramRenaming);
 
-			// Capture would occur! Need to alpha-rename the lambda parameters
-			const newParams: string[] = [];
-			const paramRenaming = new Map<string, string>();
+	case "callExpr":
+		return { ...expr };
 
-			for (const param of expr.params) {
-				if (capturedInValue.includes(param)) {
-					// This parameter would be captured, rename it
-					const newName = freshName(
-						param,
-						new Set([...paramsSet, ...boundVars, varName]),
-					);
-					newParams.push(newName);
-					paramRenaming.set(param, newName);
-				} else {
-					newParams.push(param);
-				}
-			}
+	case "fix":
+		return { ...expr };
 
-			if (paramRenaming.size === 0) {
-				return expr;
-			}
-
-			// Apply alpha renaming
-			return alphaRenameExpr(expr, new Set(), paramRenaming);
-
-		case "callExpr":
-			return { ...expr };
-
-		case "fix":
-			return { ...expr };
-
-		default:
-			return exhaustive(expr);
+	default:
+		return exhaustive(expr);
 	}
 }
 
@@ -149,54 +149,54 @@ function substituteExpr(
  */
 export function collectFreeVars(expr: Expr, boundVars: Set<string>): string[] {
 	switch (expr.kind) {
-		case "lit":
-		case "ref":
+	case "lit":
+	case "ref":
+		return [];
+
+	case "var":
+		if (boundVars.has(expr.name)) {
 			return [];
+		}
+		return [expr.name];
 
-		case "var":
-			if (boundVars.has(expr.name)) {
-				return [];
-			}
-			return [expr.name];
+	case "call":
+		// Arguments are node refs, not expressions
+		return [];
 
-		case "call":
-			// Arguments are node refs, not expressions
-			return [];
+	case "if":
+		// Branches are node refs, not expressions
+		return [];
 
-		case "if":
-			// Branches are node refs, not expressions
-			return [];
+	case "let":
+		// The name is bound in the body
+		const newBoundVars = new Set(boundVars);
+		newBoundVars.add(expr.name);
+		// Body is a node ref, not an expression
+		return [];
 
-		case "let":
-			// The name is bound in the body
-			const newBoundVars = new Set(boundVars);
-			newBoundVars.add(expr.name);
-			// Body is a node ref, not an expression
-			return [];
+	case "airRef":
+		return [];
 
-		case "airRef":
-			return [];
+	case "predicate":
+		return [];
 
-		case "predicate":
-			return [];
+	case "lambda":
+		// Parameters are bound in the body
+		const lambdaBoundVars = new Set(boundVars);
+		for (const param of expr.params) {
+			lambdaBoundVars.add(param);
+		}
+		// Body is a node ref, not an expression
+		return [];
 
-		case "lambda":
-			// Parameters are bound in the body
-			const lambdaBoundVars = new Set(boundVars);
-			for (const param of expr.params) {
-				lambdaBoundVars.add(param);
-			}
-			// Body is a node ref, not an expression
-			return [];
+	case "callExpr":
+		return [];
 
-		case "callExpr":
-			return [];
+	case "fix":
+		return [];
 
-		case "fix":
-			return [];
-
-		default:
-			return exhaustive(expr);
+	default:
+		return exhaustive(expr);
 	}
 }
 
@@ -233,73 +233,73 @@ function alphaRenameExpr(
 	renaming: Map<string, string>,
 ): Expr {
 	switch (expr.kind) {
-		case "lit":
-		case "ref":
-			return expr;
+	case "lit":
+	case "ref":
+		return expr;
 
-		case "var":
-			if (renaming.has(expr.name) && !boundVars.has(expr.name)) {
-				return { ...expr, name: renaming.get(expr.name)! };
+	case "var":
+		if (renaming.has(expr.name) && !boundVars.has(expr.name)) {
+			return { ...expr, name: renaming.get(expr.name)! };
+		}
+		return expr;
+
+	case "call":
+		return { ...expr };
+
+	case "if":
+		return { ...expr };
+
+	case "let":
+		return { ...expr };
+
+	case "airRef":
+		return { ...expr };
+
+	case "predicate":
+		return { ...expr };
+
+	case "lambda": {
+		// Check if any parameters are being renamed
+		const newParams: string[] = [];
+		const paramRenaming = new Map<string, string>();
+		const newBoundVars = new Set(boundVars);
+
+		for (const param of expr.params) {
+			newBoundVars.add(param);
+			if (renaming.has(param)) {
+				const newName = freshName(renaming.get(param)!, newBoundVars);
+				newParams.push(newName);
+				paramRenaming.set(param, newName);
+				newBoundVars.add(newName);
+			} else {
+				newParams.push(param);
 			}
-			return expr;
-
-		case "call":
-			return { ...expr };
-
-		case "if":
-			return { ...expr };
-
-		case "let":
-			return { ...expr };
-
-		case "airRef":
-			return { ...expr };
-
-		case "predicate":
-			return { ...expr };
-
-		case "lambda": {
-			// Check if any parameters are being renamed
-			const newParams: string[] = [];
-			const paramRenaming = new Map<string, string>();
-			const newBoundVars = new Set(boundVars);
-
-			for (const param of expr.params) {
-				newBoundVars.add(param);
-				if (renaming.has(param)) {
-					const newName = freshName(renaming.get(param)!, newBoundVars);
-					newParams.push(newName);
-					paramRenaming.set(param, newName);
-					newBoundVars.add(newName);
-				} else {
-					newParams.push(param);
-				}
-			}
-
-			if (paramRenaming.size === 0) {
-				return expr;
-			}
-
-			// Create updated renaming for the body
-			const updatedRenaming = new Map(renaming);
-			for (const [old, newP] of paramRenaming) {
-				updatedRenaming.set(old, newP);
-			}
-
-			return {
-				...expr,
-				params: newParams,
-			};
 		}
 
-		case "callExpr":
-			return { ...expr };
+		if (paramRenaming.size === 0) {
+			return expr;
+		}
 
-		case "fix":
-			return { ...expr };
+		// Create updated renaming for the body
+		const updatedRenaming = new Map(renaming);
+		for (const [old, newP] of paramRenaming) {
+			updatedRenaming.set(old, newP);
+		}
 
-		default:
-			return exhaustive(expr);
+		return {
+			...expr,
+			params: newParams,
+		};
+	}
+
+	case "callExpr":
+		return { ...expr };
+
+	case "fix":
+		return { ...expr };
+
+	default:
+		return exhaustive(expr);
 	}
 }
 
@@ -314,9 +314,9 @@ function alphaRenameExpr(
 export function substituteEnv(
 	env: ValueEnv,
 	varName: string,
-	value: unknown,
+	value: Value,
 ): ValueEnv {
 	const newEnv = new Map(env);
-	newEnv.set(varName, value as any); // Value type is imported from types
+	newEnv.set(varName, value);
 	return newEnv;
 }
