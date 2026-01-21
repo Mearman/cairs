@@ -99,6 +99,20 @@ function validateType(state: ValidationState, value: unknown): value is Type {
 			return true;
 
 		case "set":
+			// Sets can use 'of', 'elem', or 'elementType' for the element type
+			if (!t.of && !t.elem && !t.elementType) {
+				addError(state, "set type must have 'of', 'elem', or 'elementType' property", value);
+				return false;
+			}
+			{
+				const elemProp = t.of || t.elem || t.elementType;
+				const propName = t.of ? "of" : (t.elem ? "elem" : "elementType");
+				pushPath(state, propName);
+				const ofValid = validateType(state, elemProp);
+				popPath(state);
+				return ofValid;
+			}
+
 		case "list":
 		case "option":
 			if (!t.of) {
@@ -227,40 +241,117 @@ function validateExpr(
 				return false;
 			}
 			for (const arg of e.args as unknown[]) {
-				if (!validateId(arg)) {
-					addError(state, "call args must be valid identifiers", arg);
+				// Args can be either string identifiers (node refs) or inline expressions (objects)
+				if (!validateId(arg) && !(typeof arg === "object" && arg !== null && "kind" in arg)) {
+					addError(state, "call args must be valid identifiers or expressions", arg);
 					return false;
+				}
+				// Validate inline expression args
+				if (typeof arg === "object" && arg !== null && "kind" in arg) {
+					pushPath(state, "args");
+					const argValid = validateExpr(state, arg as Record<string, unknown>, false);
+					popPath(state);
+					if (!argValid) return false;
 				}
 			}
 			return true;
 
 		case "if":
-			if (!validateId(e.cond) || !validateId(e.then) || !validateId(e.else)) {
+			// Support both node references (strings) and inline expressions (objects)
+			// Node references: cond/then/else are string IDs
+			// Inline expressions: cond/then/else are expression objects
+			const hasNodeRefs = validateId(e.cond) && validateId(e.then) && validateId(e.else);
+			const hasInlineExprs =
+				typeof e.cond === "object" && e.cond !== null &&
+				typeof e.then === "object" && e.then !== null &&
+				typeof e.else === "object" && e.else !== null;
+
+			if (!hasNodeRefs && !hasInlineExprs) {
 				addError(
 					state,
-					"if expression must have 'cond', 'then', 'else' identifiers",
+					"if expression must have 'cond', 'then', 'else' as identifiers or expressions",
 					value,
 				);
 				return false;
 			}
-			if (!e.type) {
-				addError(state, "if expression must have 'type' property", value);
-				return false;
+
+			// Validate inline expressions if present
+			if (!hasNodeRefs) {
+				// Validate cond expression
+				if (typeof e.cond === "object" && e.cond !== null) {
+					pushPath(state, "cond");
+					const condValid = validateExpr(state, e.cond as Record<string, unknown>, false);
+					popPath(state);
+					if (!condValid) return false;
+				}
+				// Validate then expression
+				if (typeof e.then === "object" && e.then !== null) {
+					pushPath(state, "then");
+					const thenValid = validateExpr(state, e.then as Record<string, unknown>, false);
+					popPath(state);
+					if (!thenValid) return false;
+				}
+				// Validate else expression
+				if (typeof e.else === "object" && e.else !== null) {
+					pushPath(state, "else");
+					const elseValid = validateExpr(state, e.else as Record<string, unknown>, false);
+					popPath(state);
+					if (!elseValid) return false;
+				}
+
+				// type is required for inline expressions
+				if (!e.type) {
+					addError(state, "if expression must have 'type' property for inline expressions", value);
+					return false;
+				}
+				pushPath(state, "type");
+				const ifTypeValid = validateType(state, e.type);
+				popPath(state);
+				if (!ifTypeValid) return false;
 			}
-			pushPath(state, "type");
-			const ifTypeValid = validateType(state, e.type);
-			popPath(state);
-			return ifTypeValid;
+
+			return true;
 
 		case "let":
-			if (!validateId(e.name) || !validateId(e.value) || !validateId(e.body)) {
+			// Support both node references (strings) and inline expressions (objects)
+			if (!validateId(e.name)) {
+				addError(state, "let expression must have 'name' identifier", value);
+				return false;
+			}
+
+			// Check if value and body are node references or inline expressions
+			const hasLetNodeRefs = validateId(e.value) && validateId(e.body);
+			const hasLetInlineExprs =
+				typeof e.value === "object" && e.value !== null &&
+				typeof e.body === "object" && e.body !== null;
+
+			if (!hasLetNodeRefs && !hasLetInlineExprs) {
 				addError(
 					state,
-					"let expression must have 'name', 'value', 'body' identifiers",
+					"let expression must have 'value', 'body' as identifiers or expressions",
 					value,
 				);
 				return false;
 			}
+
+			// Validate inline expressions if present
+			if (!hasLetNodeRefs) {
+				// Validate value expression
+				if (typeof e.value === "object" && e.value !== null) {
+					pushPath(state, "value");
+					const valueValid = validateExpr(state, e.value as Record<string, unknown>, false);
+					popPath(state);
+					if (!valueValid) return false;
+				}
+				// Validate body expression
+				if (typeof e.body === "object" && e.body !== null) {
+					pushPath(state, "body");
+					const bodyValid = validateExpr(state, e.body as Record<string, unknown>, false);
+					popPath(state);
+					if (!bodyValid) return false;
+				}
+			}
+
 			return true;
 
 		case "airRef":
@@ -349,9 +440,17 @@ function validateExpr(
 				return false;
 			}
 			for (const arg of e.args as unknown[]) {
-				if (!validateId(arg)) {
-					addError(state, "callExpr args must be valid identifiers", arg);
+				// Args can be either string identifiers (node refs) or inline expressions (objects)
+				if (!validateId(arg) && !(typeof arg === "object" && arg !== null && "kind" in arg)) {
+					addError(state, "callExpr args must be valid identifiers or expressions", arg);
 					return false;
+				}
+				// Validate inline expression args
+				if (typeof arg === "object" && arg !== null && "kind" in arg) {
+					pushPath(state, "args");
+					const argValid = validateExpr(state, arg as Record<string, unknown>, false);
+					popPath(state);
+					if (!argValid) return false;
 				}
 			}
 			return true;
@@ -450,84 +549,222 @@ function checkAcyclic(
 	startId: string,
 	visited: Set<string>,
 	path: string[],
+	lambdaParams?: Set<string>, // Lambda parameters and let bindings to exclude from ref checking
 ): void {
 	if (visited.has(startId)) {
+		// Check if any node in the path is a lambda - if so, this is valid recursion, not a cycle
+		// Lambda bodies are lazily evaluated, so a lambda can reference nodes that reference back
+		// to the lambda without creating a true evaluation cycle (this enables recursive functions)
+		let hasLambda = false;
+		for (const nodeId of path) {
+			const node = nodes.get(nodeId);
+			if (node && node.expr.kind === "lambda") {
+				hasLambda = true;
+				break;
+			}
+		}
+		if (hasLambda) {
+			// This is recursion through a lambda, which is allowed
+			return;
+		}
 		addError(state, "Cyclic reference detected: " + path.join(" -> "));
 		return;
 	}
 
 	const node = nodes.get(startId);
 	if (!node) {
+		// Skip error if this is a lambda parameter or let binding (not a node)
+		if (lambdaParams && lambdaParams.has(startId)) {
+			return;
+		}
 		addError(state, "Reference to non-existent node: " + startId);
 		return;
 	}
 
 	visited.add(startId);
 
-	const refs = collectRefs(node.expr);
-	for (const refId of refs) {
+	// If this node is a lambda, collect its parameters for nested checks
+	if (node.expr.kind === "lambda") {
+		const params = node.expr.params;
+		if (Array.isArray(params)) {
+			const paramSet = new Set<string>();
+			// Start with the passed-in params (outer lambda parameters and let bindings)
+			if (lambdaParams) {
+				for (const p of lambdaParams) {
+					paramSet.add(p);
+				}
+			}
+			// Add this lambda's parameters
+			for (const p of params) {
+				if (typeof p === "string") {
+					paramSet.add(p);
+				}
+			}
+			// Recursively check with the new parameter set
+			const result = collectRefsAndLetBindings(node.expr, paramSet);
+			// Also include let bindings from this expression
+			for (const b of result.letBindings) paramSet.add(b);
+
+			for (const refId of result.refs) {
+				const newPath = [...path, refId];
+				checkAcyclic(state, nodes, refId, new Set(visited), newPath, paramSet);
+			}
+			return;
+		}
+	}
+
+	const result = collectRefsAndLetBindings(node.expr, lambdaParams);
+	// Combine lambda params with let bindings for recursive checks
+	const combinedParams = new Set<string>(lambdaParams || []);
+	for (const b of result.letBindings) combinedParams.add(b);
+
+	for (const refId of result.refs) {
+		// Skip checking lambda parameters and let bindings
+		if (result.letBindings.has(refId)) {
+			continue;
+		}
+		if (lambdaParams && lambdaParams.has(refId)) {
+			continue;
+		}
 		const newPath = [...path, refId];
-		checkAcyclic(state, nodes, refId, new Set(visited), newPath);
+		checkAcyclic(state, nodes, refId, new Set(visited), newPath, combinedParams);
 	}
 }
 
 type NodeMap = Map<string, { expr: Record<string, unknown> }>;
 
-function collectRefs(expr: Record<string, unknown>): string[] {
+interface RefsAndBindings {
+	refs: string[];
+	letBindings: Set<string>;
+}
+
+function collectRefsAndLetBindings(
+	expr: Record<string, unknown>,
+	params?: Set<string>, // Parameter names and let bindings to exclude from ref collection
+	letBindings?: Set<string>, // Let bindings collected so far
+): RefsAndBindings {
 	const refs: string[] = [];
+	const bindings = new Set(letBindings);
 
 	if (expr.kind === "ref") {
 		const id = expr.id;
 		if (typeof id === "string") {
-			refs.push(id);
+			// Skip if the reference is a lambda param or let binding
+			if (!params?.has(id) && !bindings.has(id)) refs.push(id);
 		}
 	} else if (expr.kind === "if") {
 		const cond = expr.cond,
 			then = expr.then,
 			els = expr.else;
-		if (typeof cond === "string") refs.push(cond);
-		if (typeof then === "string") refs.push(then);
-		if (typeof els === "string") refs.push(els);
+		// Handle node references (strings) vs inline expressions (objects)
+		// Skip if the reference is a lambda param or let binding
+		if (typeof cond === "string") {
+			if (!params?.has(cond) && !bindings.has(cond)) refs.push(cond);
+		} else if (typeof cond === "object" && cond !== null) {
+			const result = collectRefsAndLetBindings(cond as Record<string, unknown>, params, bindings);
+			refs.push(...result.refs);
+			for (const b of result.letBindings) bindings.add(b);
+		}
+
+		if (typeof then === "string") {
+			if (!params?.has(then) && !bindings.has(then)) refs.push(then);
+		} else if (typeof then === "object" && then !== null) {
+			const result = collectRefsAndLetBindings(then as Record<string, unknown>, params, bindings);
+			refs.push(...result.refs);
+			for (const b of result.letBindings) bindings.add(b);
+		}
+
+		if (typeof els === "string") {
+			if (!params?.has(els) && !bindings.has(els)) refs.push(els);
+		} else if (typeof els === "object" && els !== null) {
+			const result = collectRefsAndLetBindings(els as Record<string, unknown>, params, bindings);
+			refs.push(...result.refs);
+			for (const b of result.letBindings) bindings.add(b);
+		}
 	} else if (expr.kind === "let") {
 		const value = expr.value,
 			body = expr.body;
-		if (typeof value === "string") refs.push(value);
-		if (typeof body === "string") refs.push(body);
+		// Add let binding name to bindings to exclude it from ref collection
+		// The binding name is a variable, not a node reference
+		const letName = expr.name;
+		if (typeof letName === "string") {
+			bindings.add(letName);
+		}
+
+		// Handle node references (strings) vs inline expressions (objects)
+		// Skip if the reference is a lambda param or let binding
+		if (typeof value === "string") {
+			if (!params?.has(value) && !bindings.has(value)) refs.push(value);
+		} else if (typeof value === "object" && value !== null) {
+			const result = collectRefsAndLetBindings(value as Record<string, unknown>, params, bindings);
+			refs.push(...result.refs);
+			for (const b of result.letBindings) bindings.add(b);
+		}
+
+		if (typeof body === "string") {
+			if (!params?.has(body) && !bindings.has(body)) refs.push(body);
+		} else if (typeof body === "object" && body !== null) {
+			const result = collectRefsAndLetBindings(body as Record<string, unknown>, params, bindings);
+			refs.push(...result.refs);
+			for (const b of result.letBindings) bindings.add(b);
+		}
 	} else if (expr.kind === "call") {
 		const args = expr.args;
 		if (Array.isArray(args)) {
 			for (const arg of args) {
-				if (typeof arg === "string") refs.push(arg);
+				if (typeof arg === "string") {
+					// Skip if this is a parameter name or let binding, not a node reference
+					if (!params?.has(arg) && !bindings.has(arg)) {
+						refs.push(arg);
+					}
+				}
 			}
 		}
-	} else if (expr.kind === "airRef") {
-		const args = expr.args;
-		if (Array.isArray(args)) {
-			for (const arg of args) {
-				if (typeof arg === "string") refs.push(arg);
-			}
-		}
-	} else if (expr.kind === "predicate") {
-		const value = expr.value;
-		if (typeof value === "string") refs.push(value);
 	} else if (expr.kind === "lambda") {
-		const body = expr.body;
-		if (typeof body === "string") refs.push(body);
+		const lambdaParams = expr.params;
+		if (Array.isArray(lambdaParams)) {
+			const paramSet = new Set(params || []);
+			// Add this lambda's parameters
+			for (const p of lambdaParams) {
+				if (typeof p === "string") {
+					paramSet.add(p);
+				}
+			}
+			// Recursively collect refs from body, excluding lambda parameters
+			const body = expr.body;
+			if (typeof body === "string") {
+				// Skip if the body ref is somehow a param or binding (unlikely but consistent)
+				if (!paramSet.has(body) && !bindings.has(body)) refs.push(body);
+			} else {
+				// Body is an expression, collect refs from it with parameter awareness
+				const result = collectRefsAndLetBindings(body as Record<string, unknown>, paramSet, bindings);
+				refs.push(...result.refs);
+				for (const b of result.letBindings) bindings.add(b);
+			}
+		}
 	} else if (expr.kind === "callExpr") {
 		const fn = expr.fn,
 			args = expr.args;
-		if (typeof fn === "string") refs.push(fn);
+		// Skip fn if it's a parameter name or let binding (e.g., calling a lambda parameter)
+		if (typeof fn === "string" && !params?.has(fn) && !bindings.has(fn)) {
+			refs.push(fn);
+		}
 		if (Array.isArray(args)) {
 			for (const arg of args) {
-				if (typeof arg === "string") refs.push(arg);
+				if (typeof arg === "string") {
+					// Skip if this is a parameter name or let binding
+					if (!params?.has(arg) && !bindings.has(arg)) {
+						refs.push(arg);
+					}
+				}
 			}
 		}
 	} else if (expr.kind === "fix") {
 		const fn = expr.fn;
 		if (typeof fn === "string") refs.push(fn);
-	}
+		}
 
-	return refs;
+	return { refs, letBindings: bindings };
 }
 
 //==============================================================================
@@ -781,23 +1018,66 @@ export function validateCIR(doc: unknown): ValidationResult<CIRDocument> {
 		}
 	}
 
-	// Build node map for acyclic checking
+	// Build node map for acyclic checking and collect lambda parameters and let bindings
 	if (validateArray(d.nodes)) {
 		const nodes = d.nodes as Array<{
 			id: string;
 			expr: Record<string, unknown>;
 		}>;
 		const nodeMap: NodeMap = new Map();
+		const allParamsAndBindings = new Set<string>(); // Lambda parameters AND let binding names
+
+		// Helper to recursively collect lambda params and let bindings from an expression
+		const collectParamsAndBindings = (expr: Record<string, unknown>): void => {
+			if (expr.kind === "lambda") {
+				const params = expr.params;
+				if (Array.isArray(params)) {
+					for (const p of params) {
+						if (typeof p === "string") allParamsAndBindings.add(p);
+					}
+				}
+				// Recurse into body if it's an inline expression
+				if (typeof expr.body === "object" && expr.body !== null) {
+					collectParamsAndBindings(expr.body as Record<string, unknown>);
+				}
+			} else if (expr.kind === "let") {
+				// Collect let binding name
+				if (typeof expr.name === "string") {
+					allParamsAndBindings.add(expr.name);
+				}
+				// Recurse into value and body
+				if (typeof expr.value === "object" && expr.value !== null) {
+					collectParamsAndBindings(expr.value as Record<string, unknown>);
+				}
+				if (typeof expr.body === "object" && expr.body !== null) {
+					collectParamsAndBindings(expr.body as Record<string, unknown>);
+				}
+			} else if (expr.kind === "if") {
+				// Recurse into cond, then, else
+				if (typeof expr.cond === "object" && expr.cond !== null) {
+					collectParamsAndBindings(expr.cond as Record<string, unknown>);
+				}
+				if (typeof expr.then === "object" && expr.then !== null) {
+					collectParamsAndBindings(expr.then as Record<string, unknown>);
+				}
+				if (typeof expr.else === "object" && expr.else !== null) {
+					collectParamsAndBindings(expr.else as Record<string, unknown>);
+				}
+			}
+		};
+
 		for (const node of nodes) {
 			if (typeof node.id === "string") {
 				nodeMap.set(node.id, node);
+				// Collect lambda parameters and let bindings from this node's expression
+				collectParamsAndBindings(node.expr);
 			}
 		}
 
 		// Check each node for cycles
 		for (const node of nodes) {
 			if (typeof node.id === "string") {
-				checkAcyclic(state, nodeMap, node.id, new Set(), [node.id]);
+				checkAcyclic(state, nodeMap, node.id, new Set(), [node.id], allParamsAndBindings);
 			}
 		}
 	}
