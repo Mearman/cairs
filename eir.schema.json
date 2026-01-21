@@ -1,247 +1,247 @@
 {
-	"$schema": "https://json-schema.org/draft/2020-12/schema",
-	"$id": "https://raw.githubusercontent.com/Mearman/cairs/refs/heads/main/eir.schema.json",
-	"title": "EIR (Execution Intermediate Representation)",
-	"description": "Expression-based Execution IR extending CIR with sequencing, mutation, effects, and loops.",
-	"allOf": [
-		{
-			"$ref": "https://raw.githubusercontent.com/Mearman/cairs/refs/heads/main/cir.schema.json"
-		},
-		{
-			"type": "object",
-			"additionalProperties": false,
-			"properties": {
-				"capabilities": {
-					"type": "array",
-					"items": {
-						"type": "string"
-					}
-				}
-			}
-		}
-	],
-	"$defs": {
-		"id": {
-			"type": "string",
-			"pattern": "^[A-Za-z][A-Za-z0-9_\\-]*$"
-		},
-		"node": {
-			"type": "object",
-			"additionalProperties": false,
-			"required": ["id", "type", "expr"],
-			"properties": {
-				"id": {
-					"$ref": "#/$defs/id"
-				},
-				"type": {
-					"$ref": "https://raw.githubusercontent.com/Mearman/cairs/refs/heads/main/air.schema.json#/$defs/type"
-				},
-				"expr": {
-					"$ref": "#/$defs/exprEir"
-				}
-			}
-		},
-		"param": {
-			"type": "object",
-			"additionalProperties": false,
-			"required": ["name", "type"],
-			"properties": {
-				"name": {
-					"$ref": "#/$defs/id"
-				},
-				"type": {
-					"$ref": "https://raw.githubusercontent.com/Mearman/cairs/refs/heads/main/air.schema.json#/$defs/type"
-				}
-			}
-		},
-		"exprEir": {
-			"oneOf": [
-				{
-					"$ref": "https://raw.githubusercontent.com/Mearman/cairs/refs/heads/main/cir.schema.json#/$defs/exprCir"
-				},
-				{
-					"$ref": "#/$defs/expr_seq"
-				},
-				{
-					"$ref": "#/$defs/expr_assign"
-				},
-				{
-					"$ref": "#/$defs/expr_loop"
-				},
-				{
-					"$ref": "#/$defs/expr_effect"
-				},
-				{
-					"$ref": "#/$defs/expr_refCell"
-				}
-			]
-		},
-		"type_fn": {
-			"type": "object",
-			"additionalProperties": false,
-			"required": ["kind", "params", "returns"],
-			"properties": {
-				"kind": {
-					"const": "fn"
-				},
-				"params": {
-					"type": "array",
-					"items": {
-						"$ref": "https://raw.githubusercontent.com/Mearman/cairs/refs/heads/main/air.schema.json#/$defs/type"
-					}
-				},
-				"returns": {
-					"$ref": "https://raw.githubusercontent.com/Mearman/cairs/refs/heads/main/air.schema.json#/$defs/type"
-				}
-			}
-		},
-		"expr_seq": {
-			"type": "object",
-			"additionalProperties": false,
-			"required": ["kind", "first", "then"],
-			"properties": {
-				"kind": {
-					"const": "seq"
-				},
-				"first": {
-					"$ref": "#/$defs/id"
-				},
-				"then": {
-					"$ref": "#/$defs/id"
-				}
-			}
-		},
-		"expr_assign": {
-			"type": "object",
-			"additionalProperties": false,
-			"required": ["kind", "target", "value"],
-			"properties": {
-				"kind": {
-					"const": "assign"
-				},
-				"target": {
-					"$ref": "#/$defs/id"
-				},
-				"value": {
-					"$ref": "#/$defs/id"
-				}
-			}
-		},
-		"expr_loop": {
-			"type": "object",
-			"additionalProperties": false,
-			"required": ["kind", "loop"],
-			"properties": {
-				"kind": {
-					"const": "loop"
-				},
-				"loop": {
-					"oneOf": [
-						{
-							"$ref": "#/$defs/loop_while"
-						},
-						{
-							"$ref": "#/$defs/loop_for"
-						},
-						{
-							"$ref": "#/$defs/loop_iter"
-						}
-					]
-				}
-			}
-		},
-		"loop_while": {
-			"type": "object",
-			"additionalProperties": false,
-			"required": ["kind", "cond", "body"],
-			"properties": {
-				"kind": {
-					"const": "while"
-				},
-				"cond": {
-					"$ref": "#/$defs/id"
-				},
-				"body": {
-					"$ref": "#/$defs/id"
-				}
-			}
-		},
-		"loop_for": {
-			"type": "object",
-			"additionalProperties": false,
-			"required": ["kind", "var", "init", "cond", "update", "body"],
-			"properties": {
-				"kind": {
-					"const": "for"
-				},
-				"var": {
-					"$ref": "#/$defs/id"
-				},
-				"init": {
-					"$ref": "#/$defs/id"
-				},
-				"cond": {
-					"$ref": "#/$defs/id"
-				},
-				"update": {
-					"$ref": "#/$defs/id"
-				},
-				"body": {
-					"$ref": "#/$defs/id"
-				}
-			}
-		},
-		"loop_iter": {
-			"type": "object",
-			"additionalProperties": false,
-			"required": ["kind", "var", "iter", "body"],
-			"properties": {
-				"kind": {
-					"const": "iter"
-				},
-				"var": {
-					"$ref": "#/$defs/id"
-				},
-				"iter": {
-					"$ref": "#/$defs/id"
-				},
-				"body": {
-					"$ref": "#/$defs/id"
-				}
-			}
-		},
-		"expr_effect": {
-			"type": "object",
-			"additionalProperties": false,
-			"required": ["kind", "op", "args"],
-			"properties": {
-				"kind": {
-					"const": "effect"
-				},
-				"op": {
-					"type": "string"
-				},
-				"args": {
-					"type": "array",
-					"items": {
-						"$ref": "#/$defs/id"
-					},
-					"default": []
-				}
-			}
-		},
-		"expr_refCell": {
-			"type": "object",
-			"additionalProperties": false,
-			"required": ["kind", "target"],
-			"properties": {
-				"kind": {
-					"const": "refCell"
-				},
-				"target": {
-					"$ref": "#/$defs/id"
-				}
-			}
-		}
-	}
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/Mearman/cairs/refs/heads/main/eir.schema.json",
+  "title": "EIR (Execution Intermediate Representation)",
+  "description": "Expression-based Execution IR extending CIR with sequencing, mutation, effects, and loops.",
+  "allOf": [
+    {
+      "$ref": "https://raw.githubusercontent.com/Mearman/cairs/refs/heads/main/cir.schema.json"
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "capabilities": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z][A-Za-z0-9_\\-]*$"
+    },
+    "node": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type", "expr"],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "type": {
+          "$ref": "https://raw.githubusercontent.com/Mearman/cairs/refs/heads/main/air.schema.json#/$defs/type"
+        },
+        "expr": {
+          "$ref": "#/$defs/exprEir"
+        }
+      }
+    },
+    "param": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "type"],
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/id"
+        },
+        "type": {
+          "$ref": "https://raw.githubusercontent.com/Mearman/cairs/refs/heads/main/air.schema.json#/$defs/type"
+        }
+      }
+    },
+    "exprEir": {
+      "oneOf": [
+        {
+          "$ref": "https://raw.githubusercontent.com/Mearman/cairs/refs/heads/main/cir.schema.json#/$defs/exprCir"
+        },
+        {
+          "$ref": "#/$defs/expr_seq"
+        },
+        {
+          "$ref": "#/$defs/expr_assign"
+        },
+        {
+          "$ref": "#/$defs/expr_loop"
+        },
+        {
+          "$ref": "#/$defs/expr_effect"
+        },
+        {
+          "$ref": "#/$defs/expr_refCell"
+        }
+      ]
+    },
+    "type_fn": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "params", "returns"],
+      "properties": {
+        "kind": {
+          "const": "fn"
+        },
+        "params": {
+          "type": "array",
+          "items": {
+            "$ref": "https://raw.githubusercontent.com/Mearman/cairs/refs/heads/main/air.schema.json#/$defs/type"
+          }
+        },
+        "returns": {
+          "$ref": "https://raw.githubusercontent.com/Mearman/cairs/refs/heads/main/air.schema.json#/$defs/type"
+        }
+      }
+    },
+    "expr_seq": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "first", "then"],
+      "properties": {
+        "kind": {
+          "const": "seq"
+        },
+        "first": {
+          "$ref": "#/$defs/id"
+        },
+        "then": {
+          "$ref": "#/$defs/id"
+        }
+      }
+    },
+    "expr_assign": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "target", "value"],
+      "properties": {
+        "kind": {
+          "const": "assign"
+        },
+        "target": {
+          "$ref": "#/$defs/id"
+        },
+        "value": {
+          "$ref": "#/$defs/id"
+        }
+      }
+    },
+    "expr_loop": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "loop"],
+      "properties": {
+        "kind": {
+          "const": "loop"
+        },
+        "loop": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/loop_while"
+            },
+            {
+              "$ref": "#/$defs/loop_for"
+            },
+            {
+              "$ref": "#/$defs/loop_iter"
+            }
+          ]
+        }
+      }
+    },
+    "loop_while": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "cond", "body"],
+      "properties": {
+        "kind": {
+          "const": "while"
+        },
+        "cond": {
+          "$ref": "#/$defs/id"
+        },
+        "body": {
+          "$ref": "#/$defs/id"
+        }
+      }
+    },
+    "loop_for": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "var", "init", "cond", "update", "body"],
+      "properties": {
+        "kind": {
+          "const": "for"
+        },
+        "var": {
+          "$ref": "#/$defs/id"
+        },
+        "init": {
+          "$ref": "#/$defs/id"
+        },
+        "cond": {
+          "$ref": "#/$defs/id"
+        },
+        "update": {
+          "$ref": "#/$defs/id"
+        },
+        "body": {
+          "$ref": "#/$defs/id"
+        }
+      }
+    },
+    "loop_iter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "var", "iter", "body"],
+      "properties": {
+        "kind": {
+          "const": "iter"
+        },
+        "var": {
+          "$ref": "#/$defs/id"
+        },
+        "iter": {
+          "$ref": "#/$defs/id"
+        },
+        "body": {
+          "$ref": "#/$defs/id"
+        }
+      }
+    },
+    "expr_effect": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "op", "args"],
+      "properties": {
+        "kind": {
+          "const": "effect"
+        },
+        "op": {
+          "type": "string"
+        },
+        "args": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/id"
+          },
+          "default": []
+        }
+      }
+    },
+    "expr_refCell": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "target"],
+      "properties": {
+        "kind": {
+          "const": "refCell"
+        },
+        "target": {
+          "$ref": "#/$defs/id"
+        }
+      }
+    }
+  }
 }

@@ -1,222 +1,222 @@
 {
-	"$schema": "https://json-schema.org/draft/2020-12/schema",
-	"$id": "https://raw.githubusercontent.com/Mearman/cairs/refs/heads/main/lir.schema.json",
-	"title": "LIR (Low-level Intermediate Representation)",
-	"description": "Low-level IR with explicit control flow graph, extending CIR expressions.",
-	"allOf": [
-		{
-			"$ref": "https://raw.githubusercontent.com/Mearman/cairs/refs/heads/main/cir.schema.json"
-		},
-		{
-			"type": "object",
-			"additionalProperties": false,
-			"required": ["blocks", "entry"],
-			"properties": {
-				"blocks": {
-					"type": "array",
-					"minItems": 1,
-					"items": {
-						"$ref": "#/$defs/block"
-					}
-				},
-				"entry": {
-					"$ref": "#/$defs/id",
-					"description": "Entry basic block identifier"
-				}
-			}
-		}
-	],
-	"$defs": {
-		"id": {
-			"type": "string",
-			"pattern": "^[A-Za-z][A-Za-z0-9_\\-]*$"
-		},
-		"block": {
-			"type": "object",
-			"additionalProperties": false,
-			"required": ["id", "instructions", "terminator"],
-			"properties": {
-				"id": {
-					"$ref": "#/$defs/id"
-				},
-				"instructions": {
-					"type": "array",
-					"items": {
-						"$ref": "#/$defs/instruction"
-					}
-				},
-				"terminator": {
-					"$ref": "#/$defs/terminator"
-				}
-			}
-		},
-		"instruction": {
-			"oneOf": [
-				{
-					"$ref": "#/$defs/ins_assign"
-				},
-				{
-					"$ref": "#/$defs/ins_call"
-				},
-				{
-					"$ref": "#/$defs/ins_op"
-				},
-				{
-					"$ref": "#/$defs/ins_phi"
-				}
-			]
-		},
-		"ins_assign": {
-			"type": "object",
-			"additionalProperties": false,
-			"required": ["kind", "target", "value"],
-			"properties": {
-				"kind": {
-					"const": "assign"
-				},
-				"target": {
-					"$ref": "#/$defs/id"
-				},
-				"value": {
-					"$ref": "https://raw.githubusercontent.com/Mearman/cairs/refs/heads/main/cir.schema.json#/$defs/exprCir"
-				}
-			}
-		},
-		"ins_call": {
-			"type": "object",
-			"additionalProperties": false,
-			"required": ["kind", "target", "callee", "args"],
-			"properties": {
-				"kind": {
-					"const": "call"
-				},
-				"target": {
-					"$ref": "#/$defs/id"
-				},
-				"callee": {
-					"$ref": "#/$defs/id"
-				},
-				"args": {
-					"type": "array",
-					"items": {
-						"$ref": "#/$defs/id"
-					}
-				}
-			}
-		},
-		"ins_op": {
-			"type": "object",
-			"additionalProperties": false,
-			"required": ["kind", "target", "ns", "name", "args"],
-			"properties": {
-				"kind": {
-					"const": "op"
-				},
-				"target": {
-					"$ref": "#/$defs/id"
-				},
-				"ns": {
-					"type": "string",
-					"minLength": 1
-				},
-				"name": {
-					"type": "string",
-					"minLength": 1
-				},
-				"args": {
-					"type": "array",
-					"items": {
-						"$ref": "#/$defs/id"
-					}
-				}
-			}
-		},
-		"ins_phi": {
-			"type": "object",
-			"additionalProperties": false,
-			"required": ["kind", "target", "sources"],
-			"properties": {
-				"kind": {
-					"const": "phi"
-				},
-				"target": {
-					"$ref": "#/$defs/id"
-				},
-				"sources": {
-					"type": "array",
-					"items": {
-						"type": "object",
-						"additionalProperties": false,
-						"required": ["block", "id"],
-						"properties": {
-							"block": {
-								"$ref": "#/$defs/id"
-							},
-							"id": {
-								"$ref": "#/$defs/id"
-							}
-						}
-					}
-				}
-			}
-		},
-		"terminator": {
-			"oneOf": [
-				{
-					"$ref": "#/$defs/term_jump"
-				},
-				{
-					"$ref": "#/$defs/term_branch"
-				},
-				{
-					"$ref": "#/$defs/term_return"
-				}
-			]
-		},
-		"term_jump": {
-			"type": "object",
-			"additionalProperties": false,
-			"required": ["kind", "to"],
-			"properties": {
-				"kind": {
-					"const": "jump"
-				},
-				"to": {
-					"$ref": "#/$defs/id"
-				}
-			}
-		},
-		"term_branch": {
-			"type": "object",
-			"additionalProperties": false,
-			"required": ["kind", "cond", "then", "else"],
-			"properties": {
-				"kind": {
-					"const": "branch"
-				},
-				"cond": {
-					"$ref": "#/$defs/id"
-				},
-				"then": {
-					"$ref": "#/$defs/id"
-				},
-				"else": {
-					"$ref": "#/$defs/id"
-				}
-			}
-		},
-		"term_return": {
-			"type": "object",
-			"additionalProperties": false,
-			"required": ["kind"],
-			"properties": {
-				"kind": {
-					"const": "return"
-				},
-				"value": {
-					"$ref": "#/$defs/id"
-				}
-			}
-		}
-	}
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/Mearman/cairs/refs/heads/main/lir.schema.json",
+  "title": "LIR (Low-level Intermediate Representation)",
+  "description": "Low-level IR with explicit control flow graph, extending CIR expressions.",
+  "allOf": [
+    {
+      "$ref": "https://raw.githubusercontent.com/Mearman/cairs/refs/heads/main/cir.schema.json"
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["blocks", "entry"],
+      "properties": {
+        "blocks": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/block"
+          }
+        },
+        "entry": {
+          "$ref": "#/$defs/id",
+          "description": "Entry basic block identifier"
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z][A-Za-z0-9_\\-]*$"
+    },
+    "block": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "instructions", "terminator"],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "instructions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/instruction"
+          }
+        },
+        "terminator": {
+          "$ref": "#/$defs/terminator"
+        }
+      }
+    },
+    "instruction": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/ins_assign"
+        },
+        {
+          "$ref": "#/$defs/ins_call"
+        },
+        {
+          "$ref": "#/$defs/ins_op"
+        },
+        {
+          "$ref": "#/$defs/ins_phi"
+        }
+      ]
+    },
+    "ins_assign": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "target", "value"],
+      "properties": {
+        "kind": {
+          "const": "assign"
+        },
+        "target": {
+          "$ref": "#/$defs/id"
+        },
+        "value": {
+          "$ref": "https://raw.githubusercontent.com/Mearman/cairs/refs/heads/main/cir.schema.json#/$defs/exprCir"
+        }
+      }
+    },
+    "ins_call": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "target", "callee", "args"],
+      "properties": {
+        "kind": {
+          "const": "call"
+        },
+        "target": {
+          "$ref": "#/$defs/id"
+        },
+        "callee": {
+          "$ref": "#/$defs/id"
+        },
+        "args": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/id"
+          }
+        }
+      }
+    },
+    "ins_op": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "target", "ns", "name", "args"],
+      "properties": {
+        "kind": {
+          "const": "op"
+        },
+        "target": {
+          "$ref": "#/$defs/id"
+        },
+        "ns": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "args": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/id"
+          }
+        }
+      }
+    },
+    "ins_phi": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "target", "sources"],
+      "properties": {
+        "kind": {
+          "const": "phi"
+        },
+        "target": {
+          "$ref": "#/$defs/id"
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["block", "id"],
+            "properties": {
+              "block": {
+                "$ref": "#/$defs/id"
+              },
+              "id": {
+                "$ref": "#/$defs/id"
+              }
+            }
+          }
+        }
+      }
+    },
+    "terminator": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/term_jump"
+        },
+        {
+          "$ref": "#/$defs/term_branch"
+        },
+        {
+          "$ref": "#/$defs/term_return"
+        }
+      ]
+    },
+    "term_jump": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "to"],
+      "properties": {
+        "kind": {
+          "const": "jump"
+        },
+        "to": {
+          "$ref": "#/$defs/id"
+        }
+      }
+    },
+    "term_branch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "cond", "then", "else"],
+      "properties": {
+        "kind": {
+          "const": "branch"
+        },
+        "cond": {
+          "$ref": "#/$defs/id"
+        },
+        "then": {
+          "$ref": "#/$defs/id"
+        },
+        "else": {
+          "$ref": "#/$defs/id"
+        }
+      }
+    },
+    "term_return": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": {
+        "kind": {
+          "const": "return"
+        },
+        "value": {
+          "$ref": "#/$defs/id"
+        }
+      }
+    }
+  }
 }
