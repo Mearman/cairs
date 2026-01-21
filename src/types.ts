@@ -229,8 +229,8 @@ export function createEvalState(
 	maxSteps?: number,
 ): EvalState {
 	return {
-		env: env ?? new Map(),
-		refCells: refCells ?? new Map(),
+		env: env ?? new Map<string, Value>(),
+		refCells: refCells ?? new Map<string, Value>(),
 		effects: [],
 		steps: 0,
 		maxSteps: maxSteps ?? 10000,
@@ -465,7 +465,7 @@ export interface LirInsOp {
 export interface LirInsPhi {
 	kind: "phi";
 	target: string;
-	sources: Array<{ block: string; id: string }>;
+	sources: { block: string; id: string }[];
 }
 
 export interface LirInsEffect {
@@ -544,19 +544,19 @@ import type { ValueEnv } from "./env.js";
 
 export function hashValue(v: Value): string {
 	switch (v.kind) {
-		case "bool":
-			return "b:" + String(v.value);
-		case "int":
-			return "i:" + String(v.value);
-		case "float":
-			return "f:" + String(v.value);
-		case "string":
-			return "s:" + v.value;
-		case "option":
-			return v.value === null ? "o:none" : "o:some:" + hashValue(v.value);
-		default:
-			// Complex types use object identity
-			return "ref:" + Math.random().toString(36).slice(2);
+	case "bool":
+		return "b:" + String(v.value);
+	case "int":
+		return "i:" + String(v.value);
+	case "float":
+		return "f:" + String(v.value);
+	case "string":
+		return "s:" + v.value;
+	case "option":
+		return v.value === null ? "o:none" : "o:some:" + hashValue(v.value);
+	default:
+		// Complex types use object identity
+		return "ref:" + Math.random().toString(36).slice(2);
 	}
 }
 
@@ -598,32 +598,32 @@ export function typeEqual(a: Type, b: Type): boolean {
 	if (a.kind !== b.kind) return false;
 
 	switch (a.kind) {
-		case "bool":
-		case "int":
-		case "float":
-		case "string":
-		case "void":
-			return true;
-		case "set":
-		case "list":
-		case "option":
-		case "ref":
-			return typeEqual(a.of, (b as SetType | ListType | OptionType | RefType).of);
-		case "map":
-			return (
-				typeEqual(a.key, (b as MapType).key) &&
+	case "bool":
+	case "int":
+	case "float":
+	case "string":
+	case "void":
+		return true;
+	case "set":
+	case "list":
+	case "option":
+	case "ref":
+		return typeEqual(a.of, (b as SetType | ListType | OptionType | RefType).of);
+	case "map":
+		return (
+			typeEqual(a.key, (b as MapType).key) &&
 				typeEqual(a.value, (b as MapType).value)
-			);
-		case "opaque":
-			return a.name === (b as OpaqueType).name;
-		case "fn": {
-			const fnB = b as FnType;
-			if (a.params.length !== fnB.params.length) return false;
-			if (!a.params.every((p, i) => typeEqual(p, fnB.params[i]!))) {
-				return false;
-			}
-			return typeEqual(a.returns, fnB.returns);
+		);
+	case "opaque":
+		return a.name === (b as OpaqueType).name;
+	case "fn": {
+		const fnB = b as FnType;
+		if (a.params.length !== fnB.params.length) return false;
+		if (!a.params.every((p, i) => typeEqual(p, fnB.params[i]!))) {
+			return false;
 		}
+		return typeEqual(a.returns, fnB.returns);
+	}
 	}
 }
 
