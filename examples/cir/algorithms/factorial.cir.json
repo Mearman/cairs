@@ -7,7 +7,7 @@
   "airDefs": [
     {
       "ns": "core",
-      "name": "multiply",
+      "name": "mul",
       "params": [
         "a",
         "b"
@@ -171,7 +171,7 @@
       "expr": {
         "kind": "call",
         "ns": "core",
-        "name": "multiply",
+        "name": "mul",
         "args": [
           "five",
           "factorialOfFour"
@@ -207,7 +207,7 @@
       "expr": {
         "kind": "call",
         "ns": "core",
-        "name": "multiply",
+        "name": "mul",
         "args": [
           "four",
           "factorialOfThree"
@@ -243,7 +243,7 @@
       "expr": {
         "kind": "call",
         "ns": "core",
-        "name": "multiply",
+        "name": "mul",
         "args": [
           "three",
           "factorialOfTwo"
@@ -279,7 +279,7 @@
       "expr": {
         "kind": "call",
         "ns": "core",
-        "name": "multiply",
+        "name": "mul",
         "args": [
           "two",
           "one"
@@ -345,7 +345,7 @@
       "expr": {
         "kind": "call",
         "ns": "core",
-        "name": "multiply",
+        "name": "mul",
         "args": [
           "n",
           "factorialOfNMinusOne"
@@ -361,7 +361,10 @@
     },
     {
       "id": "result",
-      "expr": "factorialOfFive"
+      "expr": {
+        "kind": "ref",
+        "id": "factorialOfFive"
+      }
     }
   ],
   "result": "result",

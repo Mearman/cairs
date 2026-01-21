@@ -1,172 +1,42 @@
 {
   "$schema": "https://raw.githubusercontent.com/Mearman/cairs/main/air.schema.json",
   "version": "1.0.0",
-  "airDefs": [],
+  "description": "Demonstrates let expression scoping: variable shadowing, nested scopes, and accessing outer scope variables.",
+  "airDefs": [
+    {
+      "ns": "core",
+      "name": "add",
+      "params": ["a", "b"],
+      "result": { "kind": "int" },
+      "body": { "kind": "ref", "id": "a" }
+    }
+  ],
   "nodes": [
-    {
-      "id": "ten",
-      "expr": {
-        "kind": "lit",
-        "type": {
-          "kind": "int"
-        },
-        "value": 10
-      }
-    },
-    {
-      "id": "twenty",
-      "expr": {
-        "kind": "lit",
-        "type": {
-          "kind": "int"
-        },
-        "value": 20
-      }
-    },
-    {
-      "id": "thirty",
-      "expr": {
-        "kind": "lit",
-        "type": {
-          "kind": "int"
-        },
-        "value": 30
-      }
-    },
-    {
-      "id": "xRefOuter",
-      "expr": {
-        "kind": "var",
-        "name": "x"
-      }
-    },
-    {
-      "id": "innerBody",
-      "expr": {
-        "kind": "ref",
-        "id": "xRefOuter"
-      }
-    },
-    {
-      "id": "innerLet",
-      "expr": {
-        "kind": "let",
-        "name": "x",
-        "value": "twenty",
-        "body": "innerBody"
-      }
-    },
-    {
-      "id": "outerBody",
-      "expr": {
-        "kind": "ref",
-        "id": "innerLet"
-      }
-    },
     {
       "id": "shadowingExample",
       "expr": {
         "kind": "let",
         "name": "x",
-        "value": "ten",
-        "body": "outerBody"
-      }
-    },
-    {
-      "id": "five",
-      "expr": {
-        "kind": "lit",
-        "type": {
-          "kind": "int"
+        "value": {
+          "kind": "lit",
+          "type": { "kind": "int" },
+          "value": 10
         },
-        "value": 5
-      }
-    },
-    {
-      "id": "fifteen",
-      "expr": {
-        "kind": "lit",
-        "type": {
-          "kind": "int"
+        "body": {
+          "kind": "let",
+          "name": "x",
+          "value": {
+            "kind": "lit",
+            "type": { "kind": "int" },
+            "value": 20
+          },
+          "body": {
+            "kind": "ref",
+            "id": "x"
+          },
+          "type": { "kind": "int" }
         },
-        "value": 15
-      }
-    },
-    {
-      "id": "yRefLevel1",
-      "expr": {
-        "kind": "var",
-        "name": "y"
-      }
-    },
-    {
-      "id": "xRefLevel2",
-      "expr": {
-        "kind": "var",
-        "name": "x"
-      }
-    },
-    {
-      "id": "addXY2",
-      "expr": {
-        "kind": "call",
-        "ns": "core",
-        "name": "add",
-        "args": [
-          "xRefLevel2",
-          "yRefLevel1"
-        ]
-      }
-    },
-    {
-      "id": "level2Body",
-      "expr": {
-        "kind": "ref",
-        "id": "addXY2"
-      }
-    },
-    {
-      "id": "level2Let",
-      "expr": {
-        "kind": "let",
-        "name": "x",
-        "value": "thirty",
-        "body": "level2Body"
-      }
-    },
-    {
-      "id": "xRefLevel1",
-      "expr": {
-        "kind": "var",
-        "name": "x"
-      }
-    },
-    {
-      "id": "addXY1",
-      "expr": {
-        "kind": "call",
-        "ns": "core",
-        "name": "add",
-        "args": [
-          "xRefLevel1",
-          "level2Let"
-        ]
-      }
-    },
-    {
-      "id": "level1Body",
-      "expr": {
-        "kind": "ref",
-        "id": "addXY1"
-      }
-    },
-    {
-      "id": "level1Let",
-      "expr": {
-        "kind": "let",
-        "name": "y",
-        "value": "fifteen",
-        "body": "level1Body"
+        "type": { "kind": "int" }
       }
     },
     {
@@ -174,107 +44,58 @@
       "expr": {
         "kind": "let",
         "name": "x",
-        "value": "five",
-        "body": "level1Let"
-      }
-    },
-    {
-      "id": "hundred",
-      "expr": {
-        "kind": "lit",
-        "type": {
-          "kind": "int"
+        "value": {
+          "kind": "lit",
+          "type": { "kind": "int" },
+          "value": 5
         },
-        "value": 100
-      }
-    },
-    {
-      "id": "twoHundred",
-      "expr": {
-        "kind": "lit",
-        "type": {
-          "kind": "int"
+        "body": {
+          "kind": "let",
+          "name": "y",
+          "value": {
+            "kind": "lit",
+            "type": { "kind": "int" },
+            "value": 15
+          },
+          "body": {
+            "kind": "call",
+            "ns": "core",
+            "name": "add",
+            "args": [
+              {
+                "kind": "ref",
+                "id": "x"
+              },
+              {
+                "kind": "let",
+                "name": "x",
+                "value": {
+                  "kind": "lit",
+                  "type": { "kind": "int" },
+                  "value": 30
+                },
+                "body": {
+                  "kind": "call",
+                  "ns": "core",
+                  "name": "add",
+                  "args": [
+                    {
+                      "kind": "ref",
+                      "id": "x"
+                    },
+                    {
+                      "kind": "ref",
+                      "id": "y"
+                    }
+                  ]
+                },
+                "type": { "kind": "int" }
+              }
+            ]
+          },
+          "type": { "kind": "int" }
         },
-        "value": 200
-      }
-    },
-    {
-      "id": "zRefInner",
-      "expr": {
-        "kind": "var",
-        "name": "z"
-      }
-    },
-    {
-      "id": "addZ100",
-      "expr": {
-        "kind": "call",
-        "ns": "core",
-        "name": "add",
-        "args": [
-          "zRefInner",
-          "hundred"
-        ]
-      }
-    },
-    {
-      "id": "innerLetBody",
-      "expr": {
-        "kind": "ref",
-        "id": "addZ100"
-      }
-    },
-    {
-      "id": "innerLet",
-      "expr": {
-        "kind": "let",
-        "name": "y",
-        "value": "twenty",
-        "body": "innerLetBody"
-      }
-    },
-    {
-      "id": "yRefOuter",
-      "expr": {
-        "kind": "var",
-        "name": "y"
-      }
-    },
-    {
-      "id": "addY200",
-      "expr": {
-        "kind": "call",
-        "ns": "core",
-        "name": "add",
-        "args": [
-          "yRefOuter",
-          "twoHundred"
-        ]
-      }
-    },
-    {
-      "id": "outerLetBody",
-      "expr": {
-        "kind": "ref",
-        "id": "addY200"
-      }
-    },
-    {
-      "id": "outerLet",
-      "expr": {
-        "kind": "let",
-        "name": "y",
-        "value": "ten",
-        "body": "outerLetBody"
-      }
-    },
-    {
-      "id": "zOuterLet",
-      "expr": {
-        "kind": "let",
-        "name": "z",
-        "value": "thirty",
-        "body": "outerLet"
+        "type": { "kind": "int" }
       }
     },
     {
@@ -282,10 +103,51 @@
       "expr": {
         "kind": "let",
         "name": "x",
-        "value": "five",
-        "body": "zOuterLet"
+        "value": {
+          "kind": "lit",
+          "type": { "kind": "int" },
+          "value": 5
+        },
+        "body": {
+          "kind": "let",
+          "name": "z",
+          "value": {
+            "kind": "lit",
+            "type": { "kind": "int" },
+            "value": 30
+          },
+          "body": {
+            "kind": "let",
+            "name": "y",
+            "value": {
+              "kind": "lit",
+              "type": { "kind": "int" },
+              "value": 10
+            },
+            "body": {
+              "kind": "call",
+              "ns": "core",
+              "name": "add",
+              "args": [
+                {
+                  "kind": "ref",
+                  "id": "y"
+                },
+                {
+                  "kind": "lit",
+                  "type": { "kind": "int" },
+                  "value": 200
+                }
+              ]
+            },
+            "type": { "kind": "int" }
+          },
+          "type": { "kind": "int" }
+        },
+        "type": { "kind": "int" }
       }
     }
   ],
-  "result": "shadowingExample"
+  "result": "shadowingExample",
+  "note": "Shadowing example returns 20 (inner x shadows outer x)"
 }

@@ -34,20 +34,6 @@
         "kind": "ref",
         "id": "a"
       }
-    },
-    {
-      "ns": "core",
-      "name": "inc",
-      "params": [
-        "x"
-      ],
-      "result": {
-        "kind": "int"
-      },
-      "body": {
-        "kind": "ref",
-        "id": "x"
-      }
     }
   ],
   "nodes": [
@@ -129,9 +115,10 @@
       "expr": {
         "kind": "call",
         "ns": "core",
-        "name": "inc",
+        "name": "add",
         "args": [
-          "nVar"
+          "nVar",
+          "one"
         ]
       }
     },

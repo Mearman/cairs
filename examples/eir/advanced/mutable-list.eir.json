@@ -157,18 +157,11 @@
       }
     },
     {
-      "id": "updateIndex",
+      "id": "loopBody",
       "expr": {
         "kind": "assign",
         "target": "index",
         "value": "incrementIndex"
-      }
-    },
-    {
-      "id": "loopBody",
-      "expr": {
-        "kind": "ref",
-        "id": "updateIndex"
       }
     },
     {

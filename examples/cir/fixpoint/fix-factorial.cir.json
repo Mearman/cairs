@@ -37,7 +37,7 @@
     },
     {
       "ns": "core",
-      "name": "multiply",
+      "name": "mul",
       "params": [
         "a",
         "b"
@@ -208,7 +208,7 @@
       "expr": {
         "kind": "call",
         "ns": "core",
-        "name": "multiply",
+        "name": "mul",
         "args": [
           "n",
           "recResult"
