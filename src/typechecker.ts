@@ -5,7 +5,15 @@ import { lookupOperator, type OperatorRegistry } from "./domains/registry.js";
 import { TypeEnv, emptyTypeEnv, extendTypeEnv, lookupDef, lookupType, type Defs } from "./env.js";
 import { CAIRSError, exhaustive } from "./errors.js";
 import type { AIRDocument, Expr, Node, Type } from "./types.js";
-import { boolType, fnType as fnTypeCtor, intType, typeEqual } from "./types.js";
+import {
+	boolType,
+	fnType as fnTypeCtor,
+	intType,
+	listType,
+	refType,
+	typeEqual,
+	voidType,
+} from "./types.js";
 
 //==============================================================================
 // Type Checking Result
@@ -615,4 +623,375 @@ function typeCheckNode(
 		default:
 			return exhaustive(expr);
 	}
+}
+
+//==============================================================================
+// EIR Type Checking (Expression-based Imperative Representation)
+//==============================================================================
+
+// EIR expression kinds
+const EIR_EXPRESSION_KINDS = [
+	"seq",
+	"assign",
+	"while",
+	"for",
+	"iter",
+	"effect",
+	"refCell",
+	"deref",
+] as const;
+
+/**
+ * Type check an EIR program with mutation and effects.
+ */
+export function typeCheckEIRProgram(
+	doc: import("./types.js").EIRDocument,
+	registry: OperatorRegistry,
+	defs: Defs,
+	effects: import("./effects.js").EffectRegistry,
+): { nodeTypes: Map<string, Type>; resultType: Type } {
+	const checker = new TypeChecker(registry, defs);
+	const nodeTypes = new Map<string, Type>();
+	const nodeEnvs = new Map<string, TypeEnv>();
+
+	// Build a map of nodes for easy lookup
+	const nodeMap = new Map<string, Node>();
+	for (const node of doc.nodes) {
+		nodeMap.set(node.id, node);
+	}
+
+	// Track mutable variable types (for ref cells)
+	const mutableTypes = new Map<string, Type>();
+
+	// Type check each node in order
+	for (const node of doc.nodes) {
+		let env = emptyTypeEnv();
+
+		const result = typeCheckEIRNode(
+			checker,
+			node,
+			nodeMap,
+			nodeTypes,
+			nodeEnvs,
+			mutableTypes,
+			env,
+			effects,
+			registry,
+		);
+		nodeTypes.set(node.id, result.type);
+		nodeEnvs.set(node.id, result.env);
+	}
+
+	// Get the result type
+	const resultType = nodeTypes.get(doc.result);
+	if (!resultType) {
+		throw CAIRSError.validation(
+			"result",
+			"Result node not found: " + doc.result,
+		);
+	}
+
+	return { nodeTypes, resultType };
+}
+
+/**
+ * Type check a single EIR node
+ */
+function typeCheckEIRNode(
+	checker: TypeChecker,
+	node: Node,
+	nodeMap: Map<string, Node>,
+	nodeTypes: Map<string, Type>,
+	nodeEnvs: Map<string, TypeEnv>,
+	mutableTypes: Map<string, Type>,
+	env: TypeEnv,
+	effects: import("./effects.js").EffectRegistry,
+	_registry: OperatorRegistry,
+): TypeCheckResult {
+	const expr = node.expr;
+	const kind = expr.kind as string;
+
+	// Check if this is an EIR-specific expression
+	if (EIR_EXPRESSION_KINDS.includes(kind as typeof EIR_EXPRESSION_KINDS[number])) {
+		switch (kind) {
+			case "seq": {
+				const e = expr as unknown as { first: string; then: string };
+				// T-Seq: Γ ⊢ first : T, Γ ⊢ then : U ⇒ Γ ⊢ seq(first, then) : U
+				if (!nodeMap.has(e.first)) {
+					throw CAIRSError.validation(
+						"seq",
+						"First node not found: " + e.first,
+					);
+				}
+				if (!nodeMap.has(e.then)) {
+					throw CAIRSError.validation(
+						"seq",
+						"Then node not found: " + e.then,
+					);
+				}
+
+				const firstType = nodeTypes.get(e.first);
+				if (!firstType) {
+					throw CAIRSError.validation(
+						"seq",
+						"First node not yet type-checked: " + e.first,
+					);
+				}
+
+				const thenType = nodeTypes.get(e.then);
+				if (!thenType) {
+					throw CAIRSError.validation(
+						"seq",
+						"Then node not yet type-checked: " + e.then,
+					);
+				}
+
+				return { type: thenType, env };
+			}
+
+			case "assign": {
+				const e = expr as unknown as { target: string; value: string };
+				// T-Assign: Γ ⊢ value : T ⇒ Γ ⊢ assign(target, value) : void
+				if (!nodeMap.has(e.value)) {
+					throw CAIRSError.validation(
+						"assign",
+						"Value node not found: " + e.value,
+					);
+				}
+
+				const valueType = nodeTypes.get(e.value);
+				if (!valueType) {
+					throw CAIRSError.validation(
+						"assign",
+						"Value node not yet type-checked: " + e.value,
+					);
+				}
+
+				// Update mutable types for the target
+				mutableTypes.set(e.target, valueType);
+
+				return { type: voidType, env };
+			}
+
+			case "while": {
+				const e = expr as unknown as { cond: string; body: string };
+				// T-While: Γ ⊢ cond : bool, Γ ⊢ body : T ⇒ Γ ⊢ while(cond, body) : void
+				if (!nodeMap.has(e.cond)) {
+					throw CAIRSError.validation(
+						"while",
+						"Condition node not found: " + e.cond,
+					);
+				}
+				if (!nodeMap.has(e.body)) {
+					throw CAIRSError.validation(
+						"while",
+						"Body node not found: " + e.body,
+					);
+				}
+
+				const condType = nodeTypes.get(e.cond);
+				if (condType && condType.kind !== "bool") {
+					throw CAIRSError.typeError(boolType, condType, "while condition");
+				}
+
+				return { type: voidType, env };
+			}
+
+			case "for": {
+				const e = expr as unknown as { var: string; init: string; cond: string; update: string; body: string };
+				// T-For: (complex typing with var binding)
+				if (!nodeMap.has(e.init)) {
+					throw CAIRSError.validation(
+						"for",
+						"Init node not found: " + e.init,
+					);
+				}
+				if (!nodeMap.has(e.cond)) {
+					throw CAIRSError.validation(
+						"for",
+						"Condition node not found: " + e.cond,
+					);
+				}
+				if (!nodeMap.has(e.update)) {
+					throw CAIRSError.validation(
+						"for",
+						"Update node not found: " + e.update,
+					);
+				}
+				if (!nodeMap.has(e.body)) {
+					throw CAIRSError.validation(
+						"for",
+						"Body node not found: " + e.body,
+					);
+				}
+
+				const condType = nodeTypes.get(e.cond);
+				if (condType && condType.kind !== "bool") {
+					throw CAIRSError.typeError(boolType, condType, "for condition");
+				}
+
+				// Get the loop variable type from init
+				const initType = nodeTypes.get(e.init);
+				if (initType) {
+					mutableTypes.set(e.var, initType);
+				}
+
+				return { type: voidType, env };
+			}
+
+			case "iter": {
+				const e = expr as unknown as { var: string; iter: string; body: string };
+				// T-Iter: Γ ⊢ iter : list<T>, Γ ⊢ body : R ⇒ Γ ⊢ iter(var, iter, body) : void
+				if (!nodeMap.has(e.iter)) {
+					throw CAIRSError.validation(
+						"iter",
+						"Iter node not found: " + e.iter,
+					);
+				}
+				if (!nodeMap.has(e.body)) {
+					throw CAIRSError.validation(
+						"iter",
+						"Body node not found: " + e.body,
+					);
+				}
+
+				const iterType = nodeTypes.get(e.iter);
+				if (iterType && iterType.kind !== "list") {
+					throw CAIRSError.typeError(
+						listType(intType),
+						iterType,
+						"iter iterable",
+					);
+				}
+
+				// Set the loop variable type
+				if (iterType && iterType.kind === "list") {
+					mutableTypes.set(e.var, iterType.of);
+				}
+
+				return { type: voidType, env };
+			}
+
+			case "effect": {
+				const e = expr as unknown as { op: string; args: string[] };
+				// T-Effect: Look up effect signature, check args
+				const effect = effects.get(e.op);
+				if (!effect) {
+					throw CAIRSError.validation(
+						"effect",
+						"Unknown effect operation: " + e.op,
+					);
+				}
+
+				// Check arity
+				if (effect.params.length !== e.args.length) {
+					throw CAIRSError.arityError(
+						effect.params.length,
+						e.args.length,
+						"effect:" + e.op,
+					);
+				}
+
+				// Check argument types
+				for (let i = 0; i < e.args.length; i++) {
+					const argId = e.args[i];
+					if (argId === undefined) {
+						throw CAIRSError.validation(
+							"effect",
+							"Missing argument id at index " + String(i),
+						);
+					}
+					const argType = nodeTypes.get(argId);
+					const expectedParamType = effect.params[i];
+					if (expectedParamType === undefined) {
+						throw CAIRSError.validation(
+							"effect",
+							"Missing parameter type at index " + String(i),
+						);
+					}
+					if (argType && !typeEqual(argType, expectedParamType)) {
+						throw CAIRSError.typeError(
+							expectedParamType,
+							argType,
+							"effect argument " + String(i),
+						);
+					}
+				}
+
+				return { type: effect.returns, env };
+			}
+
+			case "refCell": {
+				const e = expr as unknown as { target: string };
+				// T-RefCell: Γ ⊢ target : T ⇒ Γ ⊢ refCell(target) : ref<T>
+				let targetType: Type | undefined;
+
+				// Check if target is a mutable variable
+				targetType = mutableTypes.get(e.target);
+
+				// If not in mutable types, check node map
+				if (!targetType && nodeMap.has(e.target)) {
+					targetType = nodeTypes.get(e.target);
+				}
+
+				// If not in node map, check environment
+				if (!targetType) {
+					targetType = lookupType(env, e.target);
+				}
+
+				if (!targetType) {
+					throw CAIRSError.unboundIdentifier(e.target);
+				}
+
+				return { type: refType(targetType), env };
+			}
+
+			case "deref": {
+				const e = expr as unknown as { target: string };
+				// T-Deref: Γ ⊢ target : ref<T> ⇒ Γ ⊢ deref(target) : T
+				let targetType: Type | undefined;
+
+				// Check mutable types first
+				targetType = mutableTypes.get(e.target);
+
+				// Then check node map
+				if (!targetType && nodeMap.has(e.target)) {
+					targetType = nodeTypes.get(e.target);
+				}
+
+				// Then check environment
+				if (!targetType) {
+					targetType = lookupType(env, e.target);
+				}
+
+				if (!targetType) {
+					throw CAIRSError.unboundIdentifier(e.target);
+				}
+
+				if (targetType.kind !== "ref") {
+					throw CAIRSError.typeError(
+						refType(intType),
+						targetType,
+						"deref target",
+					);
+				}
+
+				return { type: targetType.of, env };
+			}
+
+			default:
+				// Should not reach here due to EIR_EXPRESSION_KINDS check
+				return { type: voidType, env };
+		}
+	}
+
+	// Fall through to CIR/AIR type checking
+	return typeCheckNode(
+		checker,
+		node,
+		nodeMap,
+		nodeTypes,
+		nodeEnvs,
+		env,
+	);
 }
