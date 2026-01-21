@@ -1,0 +1,48 @@
+{
+  "version": "1.0.0",
+  "description": "Demonstrates reference cells (mutable memory) using refCell and deref expressions in EIR. Reference cells provide indirect mutable state.",
+  "airDefs": [
+    {
+      "ns": "core",
+      "name": "add",
+      "params": ["a", "b"],
+      "result": { "kind": "int" },
+      "body": { "kind": "ref", "id": "a" }
+    }
+  ],
+  "nodes": [
+    {
+      "id": "ten",
+      "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 10 }
+    },
+    {
+      "id": "five",
+      "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 5 }
+    },
+    {
+      "id": "initialize",
+      "expr": {
+        "kind": "assign",
+        "target": "cell",
+        "value": "ten"
+      }
+    },
+    {
+      "id": "createRef",
+      "expr": {
+        "kind": "refCell",
+        "target": "cell"
+      }
+    },
+    {
+      "id": "readRef",
+      "expr": {
+        "kind": "deref",
+        "target": "cell"
+      }
+    }
+  ],
+  "result": "readRef",
+  "expected_result": 10,
+  "note": "A reference cell is created for the variable 'cell' (which has value 10). Dereferencing reads the value through the reference cell."
+}

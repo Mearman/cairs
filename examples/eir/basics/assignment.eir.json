@@ -1,0 +1,46 @@
+{
+  "version": "1.0.0",
+  "description": "Demonstrates variable mutation using the assign expression in EIR. The assign expression updates the environment with a new binding for the target variable.",
+  "airDefs": [
+    {
+      "ns": "core",
+      "name": "add",
+      "params": ["a", "b"],
+      "result": { "kind": "int" },
+      "body": { "kind": "ref", "id": "a" }
+    }
+  ],
+  "nodes": [
+    {
+      "id": "zero",
+      "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 0 }
+    },
+    {
+      "id": "five",
+      "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 5 }
+    },
+    {
+      "id": "initCounter",
+      "expr": {
+        "kind": "assign",
+        "target": "counter",
+        "value": "zero"
+      }
+    },
+    {
+      "id": "increment",
+      "expr": {
+        "kind": "assign",
+        "target": "counter",
+        "value": "five"
+      }
+    },
+    {
+      "id": "readCounter",
+      "expr": { "kind": "var", "name": "counter" }
+    }
+  ],
+  "result": "readCounter",
+  "expected_result": 5,
+  "note": "The counter variable is first initialized to 0, then reassigned to 5. Reading it returns 5."
+}

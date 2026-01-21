@@ -1,0 +1,34 @@
+{
+  "version": "1.0.0",
+  "description": "Demonstrates I/O effects using the effect expression in EIR. Effects represent side-effecting operations like print, read, etc.",
+  "airDefs": [],
+  "nodes": [
+    {
+      "id": "message",
+      "expr": { "kind": "lit", "type": { "kind": "string" }, "value": "Hello, EIR!" }
+    },
+    {
+      "id": "printEffect",
+      "expr": {
+        "kind": "effect",
+        "op": "print",
+        "args": ["message"]
+      }
+    },
+    {
+      "id": "number",
+      "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 42 }
+    },
+    {
+      "id": "printNumber",
+      "expr": {
+        "kind": "effect",
+        "op": "print",
+        "args": ["number"]
+      }
+    }
+  ],
+  "result": "printNumber",
+  "expected_result": 42,
+  "note": "Effect operations are executed for their side effects. The print effect outputs a value and returns it. Effects are recorded in the evaluation state."
+}

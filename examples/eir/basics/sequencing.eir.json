@@ -1,0 +1,63 @@
+{
+  "version": "1.0.0",
+  "description": "Demonstrates sequential execution using the seq expression in EIR. The seq expression evaluates its first operand, then its second operand, returning the result of the second.",
+  "airDefs": [
+    {
+      "ns": "core",
+      "name": "add",
+      "params": ["a", "b"],
+      "result": { "kind": "int" },
+      "body": { "kind": "ref", "id": "a" }
+    },
+    {
+      "ns": "core",
+      "name": "mul",
+      "params": ["a", "b"],
+      "result": { "kind": "int" },
+      "body": { "kind": "ref", "id": "a" }
+    }
+  ],
+  "nodes": [
+    {
+      "id": "five",
+      "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 5 }
+    },
+    {
+      "id": "ten",
+      "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 10 }
+    },
+    {
+      "id": "three",
+      "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 3 }
+    },
+    {
+      "id": "addResult",
+      "expr": {
+        "kind": "call",
+        "ns": "core",
+        "name": "add",
+        "args": ["five", "ten"]
+      }
+    },
+    {
+      "id": "mulResult",
+      "expr": {
+        "kind": "call",
+        "ns": "core",
+        "name": "mul",
+        "args": ["addResult", "three"]
+      }
+    },
+    {
+      "id": "main",
+      "expr": {
+        "kind": "seq",
+        "first": "addResult",
+        "then": "mulResult"
+      }
+    }
+  ],
+  "result": "main",
+  "expected_result": 45,
+  "note": "The seq expression first evaluates addResult (5 + 10 = 15), then evaluates mulResult (15 * 3 = 45), returning 45."
+}
