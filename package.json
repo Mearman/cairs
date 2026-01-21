@@ -1,0 +1,30 @@
+{
+	"name": "cairs",
+	"version": "0.1.0",
+	"description": "Computational Algebraic & Iterative Representation System",
+	"type": "module",
+	"exports": {
+		".": "./dist/index.js",
+		"./schemas": "./dist/schemas.js"
+	},
+	"scripts": {
+		"build": "tsc",
+		"test": "tsx --test \"test/*.ts\"",
+		"test:types": "tsc --noEmit -p tsconfig.test.json",
+		"lint": "tsc --noEmit",
+		"ci": "pnpm lint && pnpm test:types && pnpm test"
+	},
+	"devDependencies": {
+		"@types/node": "^22.10.5",
+		"tsx": "^4.21.0",
+		"typescript": "^5.7.2"
+	},
+	"engines": {
+		"node": ">=20.0.0"
+	},
+	"files": [
+		"dist",
+		"src"
+	],
+	"packageManager": "pnpm@10.27.0"
+}
