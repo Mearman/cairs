@@ -146,6 +146,12 @@ export { evaluateLIR, type LIREvalOptions } from "./lir/evaluator.js";
 export { lowerEIRtoLIR } from "./lir/lower.js";
 
 //==============================================================================
+// Synthesis
+//==============================================================================
+
+export { synthesizePython, type PythonSynthOptions } from "./synth/python.js";
+
+//==============================================================================
 // CLI Utilities
 //==============================================================================
 
