@@ -2,7 +2,7 @@
 // Effect registry and built-in effects for EIR
 
 import type { Type, Value } from "./types.js";
-import { intType, stringType, voidType } from "./types.js";
+import { intType, stringType, voidType, intVal, stringVal } from "./types.js";
 
 //==============================================================================
 // Effect Operation Signature
@@ -68,20 +68,28 @@ export const ioEffects: EffectOp[] = [
 		params: [stringType],
 		returns: voidType,
 		pure: false,
-		fn: (..._args: Value[]) => {
-			// Return void - the actual printing is handled by the runtime
-			// based on the effects recorded in EvalState
-			return { kind: "void" };
-		},
+		fn: (..._args: Value[]) => ({ kind: "void" }),
 	},
 	{
 		name: "printInt",
 		params: [intType],
 		returns: voidType,
 		pure: false,
-		fn: (..._args: Value[]) => {
-			return { kind: "void" };
-		},
+		fn: (..._args: Value[]) => ({ kind: "void" }),
+	},
+	{
+		name: "readLine",
+		params: [],
+		returns: stringType,
+		pure: false,
+		fn: (..._args: Value[]) => stringVal(""), // runner supplies actual value
+	},
+	{
+		name: "readInt",
+		params: [],
+		returns: intType,
+		pure: false,
+		fn: (..._args: Value[]) => intVal(0), // runner supplies actual value
 	},
 ];
 
@@ -126,3 +134,72 @@ export function createDefaultEffectRegistry(): EffectRegistry {
  * Default registry instance
  */
 export const defaultEffectRegistry = createDefaultEffectRegistry();
+
+/**
+ * Create an effect registry with queue-backed input effects
+ * Used for interactive examples with deterministic input handling
+ *
+ * @param inputs - Array of input values (strings or numbers)
+ * @returns EffectRegistry with readLine/readInt bound to the input queue
+ */
+export function createQueuedEffectRegistry(inputs: (string | number)[]): EffectRegistry {
+	let inputQueue = [...inputs]; // Make a copy to avoid mutations
+
+	let registry = emptyEffectRegistry();
+
+	// Add print effect (unchanged)
+	registry = registerEffect(registry, {
+		name: "print",
+		params: [stringType],
+		returns: voidType,
+		pure: false,
+		fn: (..._args: Value[]) => ({ kind: "void" }),
+	});
+
+	// Add printInt effect (unchanged)
+	registry = registerEffect(registry, {
+		name: "printInt",
+		params: [intType],
+		returns: voidType,
+		pure: false,
+		fn: (..._args: Value[]) => ({ kind: "void" }),
+	});
+
+	// Add readLine effect with queue
+	registry = registerEffect(registry, {
+		name: "readLine",
+		params: [],
+		returns: stringType,
+		pure: false,
+		fn: (..._args: Value[]) => {
+			if (inputQueue.length === 0) {
+				return stringVal("");
+			}
+			const next = inputQueue.shift();
+			return stringVal(String(next));
+		},
+	});
+
+	// Add readInt effect with queue
+	registry = registerEffect(registry, {
+		name: "readInt",
+		params: [],
+		returns: intType,
+		pure: false,
+		fn: (..._args: Value[]) => {
+			if (inputQueue.length === 0) {
+				return intVal(0);
+			}
+			const next = inputQueue.shift();
+			const num = typeof next === "number" ? next : parseInt(String(next), 10);
+			return intVal(Number.isNaN(num) ? 0 : num);
+		},
+	});
+
+	// Optionally add state effects
+	for (const op of stateEffects) {
+		registry = registerEffect(registry, op);
+	}
+
+	return registry;
+}
