@@ -31,6 +31,7 @@ import {
 	registerDef,
 	createQueuedEffectRegistry,
 	createDefaultEffectRegistry,
+	synthesizePython,
 	type AIRDocument,
 	type CIRDocument,
 	type EIRDocument,
@@ -322,6 +323,15 @@ async function runExample(path: string, options: Options): Promise<boolean> {
 			}
 		}
 
+		// Synthesize Python code (if --synth flag is set)
+		if (options.synth) {
+			print(`${colors.bold}Synthesizing Python code...${colors.reset}`, "reset");
+			const pythonCode = synthesizePython(doc, { moduleName: `cairs_example_${path.replace(/[/\\-]/g, "_")}` });
+			print(pythonCode);
+			print(`${colors.green}✓ Synthesis complete${colors.reset}\n`, "green");
+			return true;
+		}
+
 		// Get inputs for interactive examples
 		let inputArray: (string | number)[] = [];
 		if (ir === "EIR" || ir === "LIR") {
@@ -442,11 +452,13 @@ function showHelp(): void {
 	print("  pnpm run-example air/basics/arithmetic", "cyan");
 	print("  pnpm run-example cir/algorithms/factorial", "cyan");
 	print("  pnpm run-example eir/interactive/prompt-uppercase --inputs 'hello'", "cyan");
+	print("  pnpm run-example lir/control-flow/while-cfg --synth", "cyan");
 	print("  pnpm run-example --list\n", "cyan");
 	print(`${colors.bold}Options:${colors.reset}`, "reset");
 	print("  -v, --verbose         Show detailed output", "reset");
 	print("  -l, --list            List all available examples", "reset");
 	print("  --validate            Only validate, don't evaluate", "reset");
+	print("  --synth               Generate Python code instead of evaluating", "reset");
 	print("  --inputs <values>     Input values (comma-separated or JSON)", "reset");
 	print("  --inputs-file <path>  Read inputs from JSON file", "reset");
 	print("  -h, --help            Show this help message\n", "reset");
