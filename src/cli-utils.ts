@@ -108,7 +108,10 @@ export function parseArgs(args: string[]): { path: string | null; options: Optio
 	});
 
 	for (let i = 0; i < normalized.length; i++) {
-		const arg = normalized[i]!;
+		const arg = normalized[i];
+		if (arg === undefined) {
+			break;
+		}
 		switch (arg) {
 		case "--verbose":
 		case "-v":

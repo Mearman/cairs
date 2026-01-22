@@ -67,7 +67,7 @@ function substituteExpr(
 			// Branches are node refs, not expressions, so no substitution needed
 		};
 
-	case "let":
+	case "let": {
 		// If the bound name is the one we're substituting, shadow it
 		const newLetBoundVars = new Set(boundVars);
 		newLetBoundVars.add(expr.name);
@@ -75,6 +75,7 @@ function substituteExpr(
 			...expr,
 			// Value and body are node refs, not expressions
 		};
+	}
 
 	case "airRef":
 		return { ...expr };
@@ -82,7 +83,7 @@ function substituteExpr(
 	case "predicate":
 		return { ...expr };
 
-	case "lambda":
+	case "lambda": {
 		// Check if varName is captured by lambda parameters
 		if (expr.params.includes(varName)) {
 			// varName is bound by this lambda, so free occurrences inside are not the same
@@ -127,6 +128,7 @@ function substituteExpr(
 
 		// Apply alpha renaming
 		return alphaRenameExpr(expr, new Set(), paramRenaming);
+	}
 
 	case "callExpr":
 		return { ...expr };
@@ -178,12 +180,13 @@ export function collectFreeVars(expr: Expr, boundVars: Set<string>): string[] {
 		// Branches are node refs, not expressions
 		return [];
 
-	case "let":
+	case "let": {
 		// The name is bound in the body
 		const newBoundVars = new Set(boundVars);
 		newBoundVars.add(expr.name);
 		// Body is a node ref, not an expression
 		return [];
+	}
 
 	case "airRef":
 		return [];
@@ -191,7 +194,7 @@ export function collectFreeVars(expr: Expr, boundVars: Set<string>): string[] {
 	case "predicate":
 		return [];
 
-	case "lambda":
+	case "lambda": {
 		// Parameters are bound in the body
 		const lambdaBoundVars = new Set(boundVars);
 		for (const param of expr.params) {
@@ -199,6 +202,7 @@ export function collectFreeVars(expr: Expr, boundVars: Set<string>): string[] {
 		}
 		// Body is a node ref, not an expression
 		return [];
+	}
 
 	case "callExpr":
 		return [];
@@ -243,7 +247,11 @@ export function alphaRename(
 
 	const renaming = new Map<string, string>();
 	for (let i = 0; i < oldVars.length; i++) {
-		renaming.set(oldVars[i]!, newVars[i]!);
+		const oldVar = oldVars[i];
+		const newVar = newVars[i];
+		if (oldVar !== undefined && newVar !== undefined) {
+			renaming.set(oldVar, newVar);
+		}
 	}
 
 	return alphaRenameExpr(expr, new Set(), renaming);
@@ -261,7 +269,10 @@ function alphaRenameExpr(
 
 	case "var":
 		if (renaming.has(expr.name) && !boundVars.has(expr.name)) {
-			return { ...expr, name: renaming.get(expr.name)! };
+			const newName = renaming.get(expr.name);
+			if (newName !== undefined) {
+				return { ...expr, name: newName };
+			}
 		}
 		return expr;
 
@@ -289,10 +300,13 @@ function alphaRenameExpr(
 		for (const param of expr.params) {
 			newBoundVars.add(param);
 			if (renaming.has(param)) {
-				const newName = freshName(renaming.get(param)!, newBoundVars);
-				newParams.push(newName);
-				paramRenaming.set(param, newName);
-				newBoundVars.add(newName);
+				const baseName = renaming.get(param);
+				if (baseName !== undefined) {
+					const newName = freshName(baseName, newBoundVars);
+					newParams.push(newName);
+					paramRenaming.set(param, newName);
+					newBoundVars.add(newName);
+				}
 			} else {
 				newParams.push(param);
 			}
