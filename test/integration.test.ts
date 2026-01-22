@@ -3,8 +3,16 @@
 import assert from "node:assert";
 import { describe, it } from "node:test";
 import { emptyDefs } from "../src/env.js";
-import { createBoolRegistry, createCoreRegistry, evaluateProgram, validateAIR } from "../src/index.js";
-import { intVal } from "../src/types.js";
+import {
+	createBoolRegistry,
+	createCoreRegistry,
+	createQueuedEffectRegistry,
+	evaluateProgram,
+	evaluateEIR,
+	validateAIR,
+	intVal,
+	stringVal,
+} from "../src/index.js";
 import { createTestDocument } from "./helper.js";
 
 describe("Integration Tests", () => {
@@ -328,5 +336,159 @@ describe("CIR Integration Tests", () => {
 		} as any;
 		const result = evaluateProgram(createTestDocument(doc), registry, defs);
 		assert.deepStrictEqual(result, intVal(42));
+	});
+});
+
+describe("EIR Integration Tests with Interactive Input", () => {
+	const registry = createCoreRegistry();
+	const defs = emptyDefs();
+
+	it("should evaluate EIR with single readInt effect", () => {
+		const doc = {
+			version: "1.0.0",
+			airDefs: [],
+			nodes: [
+				{
+					id: "input",
+					expr: {
+						kind: "effect",
+						op: "readInt",
+						args: [],
+					},
+				},
+			],
+			result: "input",
+		} as any;
+
+		const effectRegistry = createQueuedEffectRegistry([42]);
+		const eirResult = evaluateEIR(createTestDocument(doc), registry, defs, undefined, {
+			effects: effectRegistry,
+		});
+
+		assert.deepStrictEqual(eirResult.result, intVal(42));
+	});
+
+	it("should evaluate EIR with multiple readInt effects", () => {
+		const doc = {
+			version: "1.0.0",
+			airDefs: [],
+			nodes: [
+				{ id: "read1", expr: { kind: "effect", op: "readInt", args: [] } },
+				{ id: "read2", expr: { kind: "effect", op: "readInt", args: [] } },
+				{
+					id: "sum",
+					expr: { kind: "call", ns: "core", name: "add", args: ["read1", "read2"] },
+				},
+			],
+			result: "sum",
+		} as any;
+
+		const effectRegistry = createQueuedEffectRegistry([10, 32]);
+		const eirResult = evaluateEIR(createTestDocument(doc), registry, defs, undefined, {
+			effects: effectRegistry,
+		});
+
+		assert.deepStrictEqual(eirResult.result, intVal(42));
+	});
+
+	it("should evaluate EIR with readLine effect", () => {
+		const doc = {
+			version: "1.0.0",
+			airDefs: [],
+			nodes: [
+				{
+					id: "input",
+					expr: {
+						kind: "effect",
+						op: "readLine",
+						args: [],
+					},
+				},
+			],
+			result: "input",
+		} as any;
+
+		const effectRegistry = createQueuedEffectRegistry(["hello"]);
+		const eirResult = evaluateEIR(createTestDocument(doc), registry, defs, undefined, {
+			effects: effectRegistry,
+		});
+
+		assert.deepStrictEqual(eirResult.result, stringVal("hello"));
+	});
+
+	it("should evaluate EIR with mixed read effects", () => {
+		const doc = {
+			version: "1.0.0",
+			airDefs: [],
+			nodes: [
+				{ id: "readStr", expr: { kind: "effect", op: "readLine", args: [] } },
+				{ id: "readNum", expr: { kind: "effect", op: "readInt", args: [] } },
+			],
+			result: "readNum",
+		} as any;
+
+		const effectRegistry = createQueuedEffectRegistry(["ignored", 42]);
+		const eirResult = evaluateEIR(createTestDocument(doc), registry, defs, undefined, {
+			effects: effectRegistry,
+		});
+
+		assert.deepStrictEqual(eirResult.result, intVal(42));
+	});
+
+	it("should handle exhausted queue gracefully", () => {
+		const doc = {
+			version: "1.0.0",
+			airDefs: [],
+			nodes: [
+				{ id: "read1", expr: { kind: "effect", op: "readInt", args: [] } },
+				{ id: "read2", expr: { kind: "effect", op: "readInt", args: [] } },
+				{ id: "read3", expr: { kind: "effect", op: "readInt", args: [] } },
+				{
+					id: "result",
+					expr: { kind: "call", ns: "core", name: "add", args: ["read2", "read3"] },
+				},
+			],
+			result: "result",
+		} as any;
+
+		// Only provide 2 values, but try to read 3
+		const effectRegistry = createQueuedEffectRegistry([10, 32]);
+		const eirResult = evaluateEIR(createTestDocument(doc), registry, defs, undefined, {
+			effects: effectRegistry,
+		});
+
+		// read1 = 10, read2 = 32, read3 = 0 (exhausted)
+		// result = 32 + 0 = 32
+		assert.deepStrictEqual(eirResult.result, intVal(32));
+	});
+
+	it("should evaluate complete EIR program", () => {
+		// Read two ints, add them
+		const doc = {
+			version: "1.0.0",
+			airDefs: [],
+			nodes: [
+				{
+					id: "a",
+					expr: { kind: "effect", op: "readInt", args: [] },
+				},
+				{
+					id: "b",
+					expr: { kind: "effect", op: "readInt", args: [] },
+				},
+				{
+					id: "result",
+					expr: { kind: "call", ns: "core", name: "add", args: ["a", "b"] },
+				},
+			],
+			result: "result",
+		} as any;
+
+		const effectRegistry = createQueuedEffectRegistry([20, 22]);
+		const eirResult = evaluateEIR(createTestDocument(doc), registry, defs, undefined, {
+			effects: effectRegistry,
+		});
+
+		assert.deepStrictEqual(eirResult.result, intVal(42));
 	});
 });
