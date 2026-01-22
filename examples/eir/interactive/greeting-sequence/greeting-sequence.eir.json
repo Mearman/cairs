@@ -1,0 +1,86 @@
+{
+  "$schema": "https://raw.githubusercontent.com/Mearman/cairs/main/eir.schema.json",
+  "version": "1.0.0",
+  "description": "Interactive example: prints multiple greeting messages in sequence with no input. Demonstrates sequential output effects. Pattern: 0 inputs → many outputs.",
+  "airDefs": [],
+  "nodes": [
+    {
+      "id": "msg1",
+      "expr": {
+        "kind": "lit",
+        "type": {
+          "kind": "string"
+        },
+        "value": "Welcome to CAIRS!"
+      }
+    },
+    {
+      "id": "msg2",
+      "expr": {
+        "kind": "lit",
+        "type": {
+          "kind": "string"
+        },
+        "value": "This is a demonstration."
+      }
+    },
+    {
+      "id": "msg3",
+      "expr": {
+        "kind": "lit",
+        "type": {
+          "kind": "string"
+        },
+        "value": "Goodbye!"
+      }
+    },
+    {
+      "id": "greeting1",
+      "expr": {
+        "kind": "effect",
+        "op": "print",
+        "args": [
+          "msg1"
+        ]
+      }
+    },
+    {
+      "id": "greeting2",
+      "expr": {
+        "kind": "effect",
+        "op": "print",
+        "args": [
+          "msg2"
+        ]
+      }
+    },
+    {
+      "id": "greeting3",
+      "expr": {
+        "kind": "effect",
+        "op": "print",
+        "args": [
+          "msg3"
+        ]
+      }
+    },
+    {
+      "id": "seq12",
+      "expr": {
+        "kind": "seq",
+        "first": "greeting1",
+        "then": "greeting2"
+      }
+    },
+    {
+      "id": "finalSeq",
+      "expr": {
+        "kind": "seq",
+        "first": "seq12",
+        "then": "greeting3"
+      }
+    }
+  ],
+  "result": "finalSeq",
+  "note": "Interactive example: demonstrates sequential output of multiple messages without any input processing. Shows how seq orders multiple effects."
+}

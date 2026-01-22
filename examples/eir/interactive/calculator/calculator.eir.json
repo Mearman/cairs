@@ -1,0 +1,108 @@
+{
+  "$schema": "https://raw.githubusercontent.com/Mearman/cairs/main/eir.schema.json",
+  "version": "1.0.0",
+  "description": "Interactive example: reads two integers and computes multiple arithmetic operations, outputting all results. Demonstrates multiple inputs and multiple outputs. Pattern: many inputs → many outputs.",
+  "airDefs": [],
+  "nodes": [
+    {
+      "id": "readFirstInt",
+      "expr": {
+        "kind": "effect",
+        "op": "readInt",
+        "args": []
+      }
+    },
+    {
+      "id": "readSecondInt",
+      "expr": {
+        "kind": "effect",
+        "op": "readInt",
+        "args": []
+      }
+    },
+    {
+      "id": "sum",
+      "expr": {
+        "kind": "call",
+        "ns": "core",
+        "name": "add",
+        "args": [
+          "readFirstInt",
+          "readSecondInt"
+        ]
+      }
+    },
+    {
+      "id": "difference",
+      "expr": {
+        "kind": "call",
+        "ns": "core",
+        "name": "sub",
+        "args": [
+          "readFirstInt",
+          "readSecondInt"
+        ]
+      }
+    },
+    {
+      "id": "product",
+      "expr": {
+        "kind": "call",
+        "ns": "core",
+        "name": "mul",
+        "args": [
+          "readFirstInt",
+          "readSecondInt"
+        ]
+      }
+    },
+    {
+      "id": "printSum",
+      "expr": {
+        "kind": "effect",
+        "op": "printInt",
+        "args": [
+          "sum"
+        ]
+      }
+    },
+    {
+      "id": "printDifference",
+      "expr": {
+        "kind": "effect",
+        "op": "printInt",
+        "args": [
+          "difference"
+        ]
+      }
+    },
+    {
+      "id": "printProduct",
+      "expr": {
+        "kind": "effect",
+        "op": "printInt",
+        "args": [
+          "product"
+        ]
+      }
+    },
+    {
+      "id": "seq12",
+      "expr": {
+        "kind": "seq",
+        "first": "printSum",
+        "then": "printDifference"
+      }
+    },
+    {
+      "id": "finalSeq",
+      "expr": {
+        "kind": "seq",
+        "first": "seq12",
+        "then": "printProduct"
+      }
+    }
+  ],
+  "result": "finalSeq",
+  "note": "Interactive example: reads two integers and outputs their sum, difference, and product. Demonstrates the many inputs → many outputs pattern with computation between input and output."
+}

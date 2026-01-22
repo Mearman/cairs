@@ -1,0 +1,30 @@
+{
+  "$schema": "https://raw.githubusercontent.com/Mearman/cairs/main/eir.schema.json",
+  "version": "1.0.0",
+  "description": "Interactive example: prints a simple greeting with no input. Demonstrates print effect without input effects. Pattern: 0 inputs → 1 output.",
+  "airDefs": [],
+  "nodes": [
+    {
+      "id": "messageNode",
+      "expr": {
+        "kind": "lit",
+        "type": {
+          "kind": "string"
+        },
+        "value": "Hello, World!"
+      }
+    },
+    {
+      "id": "greeting",
+      "expr": {
+        "kind": "effect",
+        "op": "print",
+        "args": [
+          "messageNode"
+        ]
+      }
+    }
+  ],
+  "result": "greeting",
+  "note": "Interactive example: simple greeting with no input processing. Demonstrates the simplest I/O pattern."
+}
