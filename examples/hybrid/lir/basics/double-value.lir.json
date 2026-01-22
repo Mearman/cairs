@@ -1,0 +1,37 @@
+{
+  "$schema": "https://raw.githubusercontent.com/Mearman/cairs/main/lir.schema.json",
+  "version": "1.0.0",
+  "description": "LIR hybrid example: expression node for constant, block node for computation.",
+  "nodes": [
+    {
+      "id": "multiplier",
+      "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 2 }
+    },
+    {
+      "id": "input",
+      "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 21 }
+    },
+    {
+      "id": "result",
+      "blocks": [
+        {
+          "id": "entry",
+          "instructions": [
+            {
+              "kind": "op",
+              "target": "doubled",
+              "ns": "core",
+              "name": "mul",
+              "args": ["input", "multiplier"]
+            }
+          ],
+          "terminator": { "kind": "return", "value": "doubled" }
+        }
+      ],
+      "entry": "entry"
+    }
+  ],
+  "result": "result",
+  "expected_result": 42,
+  "note": "input=21 * multiplier=2 = 42. Expression nodes define constants, block node computes."
+}

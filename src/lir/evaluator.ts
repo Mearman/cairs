@@ -3,6 +3,7 @@
 
 import { CAIRSError, ErrorCodes, exhaustive } from "../errors.js";
 import {
+	type Defs,
 	emptyValueEnv,
 	extendValueEnv,
 	lookupValue,
@@ -22,7 +23,8 @@ import type {
 	LirTerminator,
 	Value,
 } from "../types.js";
-import { errorVal, intVal, isBlockNode, voidVal } from "../types.js";
+import { errorVal, intVal, isBlockNode, isExprNode, voidVal } from "../types.js";
+import { Evaluator } from "../evaluator.js";
 
 //==============================================================================
 // LIR Evaluation Options
@@ -66,6 +68,7 @@ export function evaluateLIR(
 	effectRegistry: EffectRegistry,
 	inputs?: ValueEnv,
 	options?: LIREvalOptions,
+	defs?: Defs,
 ): { result: Value; state: LIRRuntimeState } {
 	const state: LIRRuntimeState = {
 		vars: inputs ?? emptyValueEnv(),
@@ -78,6 +81,20 @@ export function evaluateLIR(
 	const nodeMap = new Map<string, LirHybridNode>();
 	for (const node of doc.nodes) {
 		nodeMap.set(node.id, node);
+	}
+
+	// Create an expression evaluator for hybrid node support
+	const emptyDefs: Defs = new Map();
+	const exprEvaluator = new Evaluator(registry, defs ?? emptyDefs);
+
+	// First pass: evaluate expression nodes and store their values
+	// This allows block nodes to reference expression node values
+	for (const node of doc.nodes) {
+		if (isExprNode(node)) {
+			// Evaluate the expression with current vars as environment
+			const value = exprEvaluator.evaluate(node.expr, state.vars);
+			state.vars = extendValueEnv(state.vars, node.id, value);
+		}
 	}
 
 	// Find the result node
@@ -93,12 +110,20 @@ export function evaluateLIR(
 	}
 
 	// Evaluate the result node
+	if (isExprNode(resultNode)) {
+		// Expression node - already evaluated, just return its value
+		const value = lookupValue(state.vars, resultNode.id);
+		return {
+			result: value ?? errorVal(ErrorCodes.UnboundIdentifier, "Result node value not found"),
+			state,
+		};
+	}
+
 	if (!isBlockNode(resultNode)) {
-		// Expression node - not yet supported in LIR evaluator
 		return {
 			result: errorVal(
 				ErrorCodes.DomainError,
-				"LIR evaluator only supports block nodes",
+				"Result node must be expression or block node",
 			),
 			state,
 		};

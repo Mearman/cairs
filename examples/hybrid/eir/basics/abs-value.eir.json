@@ -1,0 +1,61 @@
+{
+  "$schema": "https://raw.githubusercontent.com/Mearman/cairs/main/eir.schema.json",
+  "version": "1.0.0",
+  "description": "EIR hybrid example: expression node for input, block node for absolute value computation.",
+  "airDefs": [],
+  "nodes": [
+    {
+      "id": "input",
+      "expr": { "kind": "lit", "type": { "kind": "int" }, "value": -42 }
+    },
+    {
+      "id": "zero",
+      "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 0 }
+    },
+    {
+      "id": "absValue",
+      "blocks": [
+        {
+          "id": "entry",
+          "instructions": [
+            {
+              "kind": "op",
+              "target": "isNegative",
+              "ns": "core",
+              "name": "lt",
+              "args": ["input", "zero"]
+            }
+          ],
+          "terminator": {
+            "kind": "branch",
+            "cond": "isNegative",
+            "then": "negate",
+            "else": "returnInput"
+          }
+        },
+        {
+          "id": "negate",
+          "instructions": [
+            {
+              "kind": "op",
+              "target": "negated",
+              "ns": "core",
+              "name": "neg",
+              "args": ["input"]
+            }
+          ],
+          "terminator": { "kind": "return", "value": "negated" }
+        },
+        {
+          "id": "returnInput",
+          "instructions": [],
+          "terminator": { "kind": "return", "value": "input" }
+        }
+      ],
+      "entry": "entry"
+    }
+  ],
+  "result": "absValue",
+  "expected_result": 42,
+  "note": "input=-42 is negative, so returns negated value 42."
+}

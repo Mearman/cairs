@@ -1,0 +1,53 @@
+{
+  "$schema": "https://raw.githubusercontent.com/Mearman/cairs/main/air.schema.json",
+  "version": "1.0.0",
+  "description": "AIR hybrid example: expression nodes for values, block node for minimum computation.",
+  "airDefs": [],
+  "nodes": [
+    {
+      "id": "a",
+      "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 25 }
+    },
+    {
+      "id": "b",
+      "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 17 }
+    },
+    {
+      "id": "minValue",
+      "blocks": [
+        {
+          "id": "entry",
+          "instructions": [
+            {
+              "kind": "op",
+              "target": "aLessThanB",
+              "ns": "core",
+              "name": "lt",
+              "args": ["a", "b"]
+            }
+          ],
+          "terminator": {
+            "kind": "branch",
+            "cond": "aLessThanB",
+            "then": "returnA",
+            "else": "returnB"
+          }
+        },
+        {
+          "id": "returnA",
+          "instructions": [],
+          "terminator": { "kind": "return", "value": "a" }
+        },
+        {
+          "id": "returnB",
+          "instructions": [],
+          "terminator": { "kind": "return", "value": "b" }
+        }
+      ],
+      "entry": "entry"
+    }
+  ],
+  "result": "minValue",
+  "expected_result": 17,
+  "note": "a=25, b=17. Block compares a<b (false), returns b=17."
+}
