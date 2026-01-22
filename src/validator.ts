@@ -105,8 +105,8 @@ function validateType(state: ValidationState, value: unknown): value is Type {
 			return false;
 		}
 		{
-			const elemProp = t.of || t.elem || t.elementType;
-			const propName = t.of ? "of" : (t.elem ? "elem" : "elementType");
+			const elemProp = t.of ?? t.elem ?? t.elementType;
+			const propName = t.of ? "of" : t.elem ? "elem" : "elementType";
 			pushPath(state, propName);
 			const ofValid = validateType(state, elemProp);
 			popPath(state);
@@ -114,7 +114,7 @@ function validateType(state: ValidationState, value: unknown): value is Type {
 		}
 
 	case "list":
-	case "option":
+	case "option": {
 		if (!t.of) {
 			addError(state, kind + " type must have 'of' property", value);
 			return false;
@@ -123,8 +123,9 @@ function validateType(state: ValidationState, value: unknown): value is Type {
 		const ofValid = validateType(state, t.of);
 		popPath(state);
 		return ofValid;
+	}
 
-	case "map":
+	case "map": {
 		if (!t.key || !t.value) {
 			addError(
 				state,
@@ -140,6 +141,7 @@ function validateType(state: ValidationState, value: unknown): value is Type {
 		const valValid = validateType(state, t.value);
 		popPath(state);
 		return keyValid && valValid;
+	}
 
 	case "opaque":
 		if (!validateString(t.name)) {
@@ -148,7 +150,7 @@ function validateType(state: ValidationState, value: unknown): value is Type {
 		}
 		return true;
 
-	case "fn":
+	case "fn": {
 		if (!validateArray(t.params)) {
 			addError(state, "fn type must have 'params' array", value);
 			return false;
@@ -169,6 +171,7 @@ function validateType(state: ValidationState, value: unknown): value is Type {
 		const returnsValid = validateType(state, t.returns);
 		popPath(state);
 		return paramsValid && returnsValid;
+	}
 
 	default:
 		addError(state, "Unknown type kind: " + kind, value);
@@ -199,7 +202,7 @@ function validateExpr(
 	const kind = e.kind as string;
 
 	switch (kind) {
-	case "lit":
+	case "lit": {
 		if (!e.type) {
 			addError(state, "lit expression must have 'type' property", value);
 			return false;
@@ -208,6 +211,7 @@ function validateExpr(
 		const typeValid = validateType(state, e.type);
 		popPath(state);
 		return typeValid;
+	}
 
 	case "ref":
 		if (!validateId(e.id)) {
@@ -256,7 +260,7 @@ function validateExpr(
 		}
 		return true;
 
-	case "if":
+	case "if": {
 		// Support both node references (strings) and inline expressions (objects)
 		// Node references: cond/then/else are string IDs
 		// Inline expressions: cond/then/else are expression objects
@@ -311,8 +315,9 @@ function validateExpr(
 		}
 
 		return true;
+	}
 
-	case "let":
+	case "let": {
 		// Support both node references (strings) and inline expressions (objects)
 		if (!validateId(e.name)) {
 			addError(state, "let expression must have 'name' identifier", value);
@@ -353,6 +358,7 @@ function validateExpr(
 		}
 
 		return true;
+	}
 
 	case "airRef":
 		if (!validateId(e.ns) || !validateId(e.name)) {
@@ -386,7 +392,7 @@ function validateExpr(
 		}
 		return true;
 
-	case "lambda":
+	case "lambda": {
 		if (!allowCIR) {
 			addError(
 				state,
@@ -442,6 +448,7 @@ function validateExpr(
 		const lambdaTypeValid = validateType(state, e.type);
 		popPath(state);
 		return lambdaTypeValid;
+	}
 
 	case "callExpr":
 		if (!allowCIR) {
@@ -480,7 +487,7 @@ function validateExpr(
 		}
 		return true;
 
-	case "fix":
+	case "fix": {
 		if (!allowCIR) {
 			addError(
 				state,
@@ -501,6 +508,7 @@ function validateExpr(
 		const fixTypeValid = validateType(state, e.type);
 		popPath(state);
 		return fixTypeValid;
+	}
 
 	default:
 		addError(state, "Unknown expression kind: " + kind, value);
@@ -583,7 +591,7 @@ function checkAcyclic(
 		let hasLambda = false;
 		for (const nodeId of path) {
 			const node = nodes.get(nodeId);
-			if (node && "expr" in node && node.expr?.kind === "lambda") {
+			if (node && "expr" in node && node.expr.kind === "lambda") {
 				hasLambda = true;
 				break;
 			}
@@ -645,7 +653,7 @@ function checkAcyclic(
 
 	const result = collectRefsAndLetBindings(node.expr, lambdaParams);
 	// Combine lambda params with let bindings for recursive checks
-	const combinedParams = new Set<string>(lambdaParams || []);
+	const combinedParams = new Set<string>(lambdaParams);
 	for (const b of result.letBindings) combinedParams.add(b);
 
 	for (const refId of result.refs) {
@@ -753,7 +761,7 @@ function collectRefsAndLetBindings(
 	} else if (expr.kind === "lambda") {
 		const lambdaParams = expr.params;
 		if (Array.isArray(lambdaParams)) {
-			const paramSet = new Set(params || []);
+			const paramSet = new Set(params ?? []);
 			// Add this lambda's parameters
 			for (const p of lambdaParams) {
 				if (typeof p === "string") {
@@ -1108,7 +1116,7 @@ export function validateCIR(doc: unknown): ValidationResult<CIRDocument> {
 			if (typeof node.id === "string") {
 				nodeMap.set(node.id, node);
 				// Collect lambda parameters and let bindings from this node's expression
-				if ("expr" in node && node.expr) {
+				if ("expr" in node) {
 					collectParamsAndBindings(node.expr);
 				}
 			}
@@ -1238,8 +1246,7 @@ export function validateEIR(doc: unknown): ValidationResult<import("./types.js")
 	// Validate node references in EIR expressions
 	if (validateArray(d.nodes)) {
 		const nodes = d.nodes as unknown[];
-		for (let i = 0; i < nodes.length; i++) {
-			const node = nodes[i];
+		for (const node of nodes) {
 			if (validateObject(node)) {
 				const n = node as Record<string, unknown>;
 				if (n.expr && validateObject(n.expr)) {
