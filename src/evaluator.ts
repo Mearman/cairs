@@ -160,6 +160,20 @@ export class Evaluator {
 		case "fix":
 			return this.evalFix(expr, env, state);
 
+		// PIR expressions - not supported in synchronous evaluator
+		case "par":
+		case "spawn":
+		case "await":
+		case "channel":
+		case "send":
+		case "recv":
+		case "select":
+		case "race":
+			return errorVal(
+				ErrorCodes.DomainError,
+				"PIR expressions require AsyncEvaluator: " + expr.kind,
+			);
+
 		default:
 			return exhaustive(expr);
 		}
@@ -2092,6 +2106,23 @@ function evalNode(
 
 		return { value: selfRef, env };
 	}
+
+	// PIR expressions - not supported in synchronous evaluator
+	case "par":
+	case "spawn":
+	case "await":
+	case "channel":
+	case "send":
+	case "recv":
+	case "select":
+	case "race":
+		return {
+			value: errorVal(
+				ErrorCodes.DomainError,
+				"PIR expressions require AsyncEvaluator: " + expr.kind,
+			),
+			env,
+		};
 
 	default:
 		return { value: exhaustive(expr), env };

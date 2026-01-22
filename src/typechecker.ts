@@ -930,6 +930,19 @@ function typeCheckNode(
 		return { type: expr.type, env };
 	}
 
+	// PIR expressions - minimal type checking for now
+	case "par":
+	case "spawn":
+	case "await":
+	case "channel":
+	case "send":
+	case "recv":
+	case "select":
+	case "race":
+		// PIR expressions are not yet fully type-checked
+		// Return void as default type
+		return { type: voidType, env };
+
 	default:
 		return exhaustive(expr);
 	}

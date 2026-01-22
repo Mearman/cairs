@@ -143,7 +143,7 @@ export const defaultEffectRegistry = createDefaultEffectRegistry();
  * @returns EffectRegistry with readLine/readInt bound to the input queue
  */
 export function createQueuedEffectRegistry(inputs: (string | number)[]): EffectRegistry {
-	let inputQueue = [...inputs]; // Make a copy to avoid mutations
+	const inputQueue = [...inputs]; // Make a copy to avoid mutations
 
 	let registry = emptyEffectRegistry();
 

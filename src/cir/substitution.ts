@@ -134,6 +134,17 @@ function substituteExpr(
 	case "fix":
 		return { ...expr };
 
+	// PIR expressions - no substitution needed (they use string refs)
+	case "par":
+	case "spawn":
+	case "await":
+	case "channel":
+	case "send":
+	case "recv":
+	case "select":
+	case "race":
+		return { ...expr };
+
 	default:
 		return exhaustive(expr);
 	}
@@ -193,6 +204,17 @@ export function collectFreeVars(expr: Expr, boundVars: Set<string>): string[] {
 		return [];
 
 	case "fix":
+		return [];
+
+	// PIR expressions - no free variables (they use string refs)
+	case "par":
+	case "spawn":
+	case "await":
+	case "channel":
+	case "send":
+	case "recv":
+	case "select":
+	case "race":
 		return [];
 
 	default:
@@ -296,6 +318,17 @@ function alphaRenameExpr(
 		return { ...expr };
 
 	case "fix":
+		return { ...expr };
+
+	// PIR expressions - no renaming needed (they use string refs)
+	case "par":
+	case "spawn":
+	case "await":
+	case "channel":
+	case "send":
+	case "recv":
+	case "select":
+	case "race":
 		return { ...expr };
 
 	default:
