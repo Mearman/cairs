@@ -97,9 +97,6 @@ export class OperatorBuilder {
 	}
 
 	build(): Operator {
-		if (!this.returns || !this.fn) {
-			throw new Error("Operator must have returns and fn defined");
-		}
 		return {
 			ns: this.ns,
 			name: this.name,

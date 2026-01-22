@@ -79,7 +79,11 @@ const nth: Operator = defineOperator("list", "nth")
 				"Index out of bounds: " + String(idx),
 			);
 		}
-		return a.value[idx]!;
+		const result = a.value[idx];
+		if (result === undefined) {
+			return errorVal(ErrorCodes.DomainError, "Index out of bounds: " + String(idx));
+		}
+		return result;
 	})
 	.build();
 
