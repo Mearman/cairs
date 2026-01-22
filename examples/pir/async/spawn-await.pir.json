@@ -1,0 +1,30 @@
+{
+  "$schema": "../../pir.schema.json",
+  "version": "2.0.0",
+  "capabilities": ["async"],
+  "description": "Spawns async task, does other work, awaits result",
+  "nodes": [
+    { "id": "input", "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 42 } },
+    {
+      "id": "heavyComputation",
+      "expr": { "kind": "call", "ns": "core", "name": "mul", "args": ["input", "input"] }
+    },
+    {
+      "id": "taskFuture",
+      "type": { "kind": "future", "of": { "kind": "int" } },
+      "expr": { "kind": "spawn", "task": "heavyComputation" }
+    },
+    { "id": "otherWork", "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 100 } },
+    {
+      "id": "taskResult",
+      "expr": { "kind": "await", "future": "taskFuture" }
+    },
+    {
+      "id": "final",
+      "type": { "kind": "int" },
+      "expr": { "kind": "call", "ns": "core", "name": "add", "args": ["taskResult", "otherWork"] }
+    }
+  ],
+  "result": "final",
+  "expected_result": 1864
+}

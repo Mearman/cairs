@@ -1,0 +1,25 @@
+{
+  "$schema": "../../pir.schema.json",
+  "version": "2.0.0",
+  "capabilities": ["async", "parallel"],
+  "description": "Computes (10 + 20) and (30 + 40) in parallel using the par expression",
+  "nodes": [
+    { "id": "a", "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 10 } },
+    { "id": "b", "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 20 } },
+    { "id": "c", "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 30 } },
+    { "id": "d", "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 40 } },
+    {
+      "id": "sum1",
+      "expr": { "kind": "call", "ns": "core", "name": "add", "args": ["a", "b"] }
+    },
+    {
+      "id": "sum2",
+      "expr": { "kind": "call", "ns": "core", "name": "add", "args": ["c", "d"] }
+    },
+    {
+      "id": "parallelSums",
+      "expr": { "kind": "par", "branches": ["sum1", "sum2"] }
+    }
+  ],
+  "result": "parallelSums"
+}

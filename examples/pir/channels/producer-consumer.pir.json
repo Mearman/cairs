@@ -1,0 +1,35 @@
+{
+  "$schema": "../../pir.schema.json",
+  "version": "2.0.0",
+  "capabilities": ["async", "channels"],
+  "description": "Producer sends values, consumer receives and sums",
+  "nodes": [
+    { "id": "bufferSize", "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 10 } },
+    { "id": "val10", "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 10 } },
+    { "id": "val20", "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 20 } },
+    {
+      "id": "msgChannel",
+      "type": { "kind": "channel", "channelType": "mpsc", "of": { "kind": "int" } },
+      "expr": { "kind": "channel", "channelType": "mpsc", "bufferSize": "bufferSize" }
+    },
+    { "id": "send1", "expr": { "kind": "send", "channel": "msgChannel", "value": "val10" } },
+    { "id": "send2", "expr": { "kind": "send", "channel": "msgChannel", "value": "val20" } },
+    {
+      "id": "producerTask",
+      "expr": { "kind": "seq", "first": "send1", "then": "send2" }
+    },
+    {
+      "id": "producerFuture",
+      "expr": { "kind": "spawn", "task": "producerTask" }
+    },
+    { "id": "val1", "expr": { "kind": "recv", "channel": "msgChannel" } },
+    { "id": "val2", "expr": { "kind": "recv", "channel": "msgChannel" } },
+    {
+      "id": "sum",
+      "type": { "kind": "int" },
+      "expr": { "kind": "call", "ns": "core", "name": "add", "args": ["val1", "val2"] }
+    }
+  ],
+  "result": "sum",
+  "expected_result": 30
+}
