@@ -1,0 +1,172 @@
+{
+  "$schema": "https://raw.githubusercontent.com/Mearman/cairs/main/lir.schema.json",
+  "version": "1.0.0",
+  "description": "LIR representation of loop structure for echo pattern: CFG with entry, loop header, loop body, and exit. Demonstrates control flow in CFG form.",
+  "blocks": [
+    {
+      "id": "entry",
+      "instructions": [
+        {
+          "kind": "assign",
+          "target": "counter",
+          "value": {
+            "kind": "lit",
+            "type": {
+              "kind": "int"
+            },
+            "value": 0
+          }
+        }
+      ],
+      "terminator": {
+        "kind": "jump",
+        "to": "loopHeader"
+      }
+    },
+    {
+      "id": "loopHeader",
+      "instructions": [
+        {
+          "kind": "assign",
+          "target": "limit",
+          "value": {
+            "kind": "lit",
+            "type": {
+              "kind": "int"
+            },
+            "value": 3
+          }
+        },
+        {
+          "kind": "op",
+          "target": "shouldContinue",
+          "ns": "core",
+          "name": "lt",
+          "args": [
+            "counter",
+            "limit"
+          ]
+        }
+      ],
+      "terminator": {
+        "kind": "branch",
+        "cond": "shouldContinue",
+        "then": "loopBody",
+        "else": "loopExit"
+      }
+    },
+    {
+      "id": "loopBody",
+      "instructions": [
+        {
+          "kind": "assign",
+          "target": "promptEnter",
+          "value": {
+            "kind": "lit",
+            "type": {
+              "kind": "string"
+            },
+            "value": "Enter value: "
+          }
+        },
+        {
+          "kind": "effect",
+          "target": "printedPrompt",
+          "op": "print",
+          "args": [
+            "promptEnter"
+          ]
+        },
+        {
+          "kind": "assign",
+          "target": "iteration",
+          "value": {
+            "kind": "var",
+            "name": "counter"
+          }
+        },
+        {
+          "kind": "effect",
+          "target": "printed",
+          "op": "printInt",
+          "args": [
+            "iteration"
+          ]
+        }
+      ],
+      "terminator": {
+        "kind": "jump",
+        "to": "loopIncrement"
+      }
+    },
+    {
+      "id": "loopIncrement",
+      "instructions": [
+        {
+          "kind": "assign",
+          "target": "one",
+          "value": {
+            "kind": "lit",
+            "type": {
+              "kind": "int"
+            },
+            "value": 1
+          }
+        },
+        {
+          "kind": "op",
+          "target": "nextCounter",
+          "ns": "core",
+          "name": "add",
+          "args": [
+            "counter",
+            "one"
+          ]
+        },
+        {
+          "kind": "assign",
+          "target": "counter",
+          "value": {
+            "kind": "var",
+            "name": "nextCounter"
+          }
+        }
+      ],
+      "terminator": {
+        "kind": "jump",
+        "to": "loopHeader"
+      }
+    },
+    {
+      "id": "loopExit",
+      "instructions": [
+        {
+          "kind": "assign",
+          "target": "doneMessage",
+          "value": {
+            "kind": "lit",
+            "type": {
+              "kind": "string"
+            },
+            "value": "Done."
+          }
+        },
+        {
+          "kind": "effect",
+          "target": "printedDone",
+          "op": "print",
+          "args": [
+            "doneMessage"
+          ]
+        }
+      ],
+      "terminator": {
+        "kind": "return",
+        "value": "doneMessage"
+      }
+    }
+  ],
+  "entry": "entry",
+  "expected_result": "Done.",
+  "note": "Echo-loop CFG: Demonstrates a fixed-iteration loop (0 to 3) in CFG form. Each iteration prints a prompt, prints the iteration counter, increments, and loops back. This structure mirrors the EIR for loop lowered to explicit basic blocks with condition checking and back-edges."
+}

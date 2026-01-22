@@ -1,0 +1,371 @@
+{
+  "$schema": "https://raw.githubusercontent.com/Mearman/cairs/main/eir.schema.json",
+  "version": "1.0.0",
+  "description": "Interactive example: loops 3 times, each iteration reads an integer and echoes it back. Demonstrates for loop with interleaved I/O effects.",
+  "airDefs": [
+    {
+      "ns": "core",
+      "name": "add",
+      "params": [
+        "a",
+        "b"
+      ],
+      "result": {
+        "kind": "int"
+      },
+      "body": {
+        "kind": "ref",
+        "id": "a"
+      }
+    },
+    {
+      "ns": "core",
+      "name": "lt",
+      "params": [
+        "a",
+        "b"
+      ],
+      "result": {
+        "kind": "bool"
+      },
+      "body": {
+        "kind": "ref",
+        "id": "a"
+      }
+    },
+    {
+      "ns": "core",
+      "name": "eq",
+      "params": [
+        "a",
+        "b"
+      ],
+      "result": {
+        "kind": "bool"
+      },
+      "body": {
+        "kind": "ref",
+        "id": "a"
+      }
+    }
+  ],
+  "nodes": [
+    {
+      "id": "zero",
+      "type": {
+        "kind": "int"
+      },
+      "expr": {
+        "kind": "lit",
+        "type": {
+          "kind": "int"
+        },
+        "value": 0
+      }
+    },
+    {
+      "id": "one",
+      "type": {
+        "kind": "int"
+      },
+      "expr": {
+        "kind": "lit",
+        "type": {
+          "kind": "int"
+        },
+        "value": 1
+      }
+    },
+    {
+      "id": "three",
+      "type": {
+        "kind": "int"
+      },
+      "expr": {
+        "kind": "lit",
+        "type": {
+          "kind": "int"
+        },
+        "value": 3
+      }
+    },
+    {
+      "id": "negOne",
+      "type": {
+        "kind": "int"
+      },
+      "expr": {
+        "kind": "lit",
+        "type": {
+          "kind": "int"
+        },
+        "value": -1
+      }
+    },
+    {
+      "id": "promptEnter",
+      "type": {
+        "kind": "string"
+      },
+      "expr": {
+        "kind": "lit",
+        "type": {
+          "kind": "string"
+        },
+        "value": "Enter value: "
+      }
+    },
+    {
+      "id": "promptReceived",
+      "type": {
+        "kind": "string"
+      },
+      "expr": {
+        "kind": "lit",
+        "type": {
+          "kind": "string"
+        },
+        "value": "Received: "
+      }
+    },
+    {
+      "id": "promptQuit",
+      "type": {
+        "kind": "string"
+      },
+      "expr": {
+        "kind": "lit",
+        "type": {
+          "kind": "string"
+        },
+        "value": "Quit signal received."
+      }
+    },
+    {
+      "id": "printPrompt",
+      "type": {
+        "kind": "string"
+      },
+      "expr": {
+        "kind": "effect",
+        "op": "print",
+        "args": [
+          "promptEnter"
+        ]
+      }
+    },
+    {
+      "id": "readValue",
+      "type": {
+        "kind": "int"
+      },
+      "expr": {
+        "kind": "effect",
+        "op": "readInt",
+        "args": []
+      }
+    },
+    {
+      "id": "isQuit",
+      "type": {
+        "kind": "bool"
+      },
+      "expr": {
+        "kind": "call",
+        "ns": "core",
+        "name": "eq",
+        "args": [
+          "readValue",
+          "negOne"
+        ]
+      }
+    },
+    {
+      "id": "printReceived",
+      "type": {
+        "kind": "string"
+      },
+      "expr": {
+        "kind": "effect",
+        "op": "print",
+        "args": [
+          "promptReceived"
+        ]
+      }
+    },
+    {
+      "id": "printValue",
+      "type": {
+        "kind": "int"
+      },
+      "expr": {
+        "kind": "effect",
+        "op": "printInt",
+        "args": [
+          "readValue"
+        ]
+      }
+    },
+    {
+      "id": "printQuit",
+      "type": {
+        "kind": "string"
+      },
+      "expr": {
+        "kind": "effect",
+        "op": "print",
+        "args": [
+          "promptQuit"
+        ]
+      }
+    },
+    {
+      "id": "valueOutput",
+      "type": {
+        "kind": "int"
+      },
+      "expr": {
+        "kind": "seq",
+        "first": "printReceived",
+        "then": "printValue"
+      }
+    },
+    {
+      "id": "conditionalOutput",
+      "type": {
+        "kind": "int"
+      },
+      "expr": {
+        "kind": "if",
+        "cond": "isQuit",
+        "then": "printQuit",
+        "else": "valueOutput"
+      }
+    },
+    {
+      "id": "loopBody",
+      "type": {
+        "kind": "int"
+      },
+      "expr": {
+        "kind": "seq",
+        "first": "printPrompt",
+        "then": "conditionalOutput"
+      }
+    },
+    {
+      "id": "initValue",
+      "type": {
+        "kind": "int"
+      },
+      "expr": {
+        "kind": "ref",
+        "id": "zero"
+      }
+    },
+    {
+      "id": "condValue",
+      "type": {
+        "kind": "int"
+      },
+      "expr": {
+        "kind": "var",
+        "name": "i"
+      }
+    },
+    {
+      "id": "condition",
+      "type": {
+        "kind": "bool"
+      },
+      "expr": {
+        "kind": "call",
+        "ns": "core",
+        "name": "lt",
+        "args": [
+          "condValue",
+          "three"
+        ]
+      }
+    },
+    {
+      "id": "updateValue",
+      "type": {
+        "kind": "int"
+      },
+      "expr": {
+        "kind": "var",
+        "name": "i"
+      }
+    },
+    {
+      "id": "update",
+      "type": {
+        "kind": "int"
+      },
+      "expr": {
+        "kind": "call",
+        "ns": "core",
+        "name": "add",
+        "args": [
+          "updateValue",
+          "one"
+        ]
+      }
+    },
+    {
+      "id": "echoLoop",
+      "type": {
+        "kind": "int"
+      },
+      "expr": {
+        "kind": "for",
+        "var": "i",
+        "init": "initValue",
+        "cond": "condition",
+        "update": "update",
+        "body": "loopBody"
+      }
+    },
+    {
+      "id": "done",
+      "type": {
+        "kind": "string"
+      },
+      "expr": {
+        "kind": "lit",
+        "type": {
+          "kind": "string"
+        },
+        "value": "Done."
+      }
+    },
+    {
+      "id": "printDone",
+      "type": {
+        "kind": "string"
+      },
+      "expr": {
+        "kind": "effect",
+        "op": "print",
+        "args": [
+          "done"
+        ]
+      }
+    },
+    {
+      "id": "finalResult",
+      "type": {
+        "kind": "string"
+      },
+      "expr": {
+        "kind": "seq",
+        "first": "echoLoop",
+        "then": "printDone"
+      }
+    }
+  ],
+  "result": "finalResult",
+  "expected_result": "Done.",
+  "note": "For loop with I/O pattern: iterates 3 times (i=0,1,2). Each iteration prints a prompt, reads an integer, checks if it equals -1 (quit signal), and prints either a confirmation with the value or a quit message."
+}
