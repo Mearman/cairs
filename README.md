@@ -52,6 +52,7 @@ Representative examples:
 - CIR: [algorithms/factorial](./examples/cir/algorithms/factorial/factorial.cir.json)
 - EIR: [interactive/add-two-ints](./examples/eir/interactive/add-two-ints/add-two-ints.eir.json)
 - LIR: [control-flow/while-cfg](./examples/lir/control-flow/while-cfg/while-cfg.lir.json)
+- Hybrid: [basics/max-value](./examples/hybrid/basics/max-value/max-value.cir.json)
 
 ## Overview
 
@@ -87,6 +88,38 @@ CAIRS provides a layered representation system:
 | `deref`     | ❌  | ❌  | ✅  | ❌  | Dereference cell |
 | `phi`       | ❌  | ❌  | ❌  | ✅  | SSA phi node |
 
+### Hybrid Documents
+
+All layers now support **hybrid nodes** — each node can contain EITHER:
+- **Expression node**: `{ "id": "...", "expr": { ... } }` — traditional expression
+- **Block node**: `{ "id": "...", "blocks": [...], "entry": "..." }` — CFG structure
+
+This enables mixing expression-based and CFG-based computation within the same document:
+
+```json
+{
+  "nodes": [
+    { "id": "x", "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 10 } },
+    {
+      "id": "doubled",
+      "blocks": [
+        {
+          "id": "entry",
+          "instructions": [
+            { "kind": "op", "target": "result", "ns": "core", "name": "mul", "args": ["x", "x"] }
+          ],
+          "terminator": { "kind": "return", "value": "result" }
+        }
+      ],
+      "entry": "entry"
+    }
+  ],
+  "result": "doubled"
+}
+```
+
+Block nodes can reference expression node values by ID, enabling a natural bridge between declarative and imperative styles.
+
 ## Features
 
 - Zero runtime dependencies
@@ -108,7 +141,7 @@ Schemas (quick summaries):
 - [AIR Schema](./air.schema.json) — `version`, `airDefs`, `nodes`, `result` (pure expressions)
 - [CIR Schema](./cir.schema.json) — Same shape as AIR; adds lambdas/recursion constructs in expressions
 - [EIR Schema](./eir.schema.json) — Adds `seq`, `assign`, `loop`, `effect`, `refCell` to support imperative execution
-- [LIR Schema](./lir.schema.json) — CFG with `blocks` (instructions) and `entry`; instructions plus terminators
+- [LIR Schema](./lir.schema.json) — Same `nodes`/`result` structure; nodes use block-based CFG with instructions and terminators
 
 Further reading:
 - [Formal Specification](#specification) — Complete semantics and inference rules
@@ -145,6 +178,7 @@ Follow these curated examples to see AIR → CIR → EIR → LIR in practice:
 5. CIR higher-order: `cir/higher-order/compose.cir.json`, `cir/higher-order/fold.cir.json`
 6. EIR imperative: `eir/basics/sequencing.eir.json`, `eir/loops/while-loop.eir.json`, `eir/algorithms/factorial.eir.json`
 7. LIR CFGs: `lir/basics/straight-line.lir.json`, `lir/control-flow/while-cfg.lir.json`, `lir/phi/loop-phi.lir.json`
+8. Hybrid documents: `hybrid/air/basics/min-value.air.json`, `hybrid/lir/basics/double-value.lir.json`, `hybrid/lir/expr-only/sum-literals.lir.json`
 
 ---
 
@@ -410,27 +444,28 @@ LIR provides a **control-flow graph** representation suitable for code generatio
 
 ### 8.2 Structure
 
-LIR replaces the expression DAG with basic blocks:
+LIR uses the same unified `nodes[]`/`result` structure as other layers. Nodes can be expression nodes or block nodes:
 
 ```json
 {
-	"blocks": [
-		{
-			"id": "block1",
-			"instructions": [
-				{ "kind": "assign", "target": "x", "value": "..." },
-				{
-					"kind": "op",
-					"target": "y",
-					"ns": "core",
-					"name": "add",
-					"args": ["x", "1"]
-				}
-			],
-			"terminator": { "kind": "jump", "to": "block2" }
-		}
-	],
-	"entry": "block1"
+  "version": "1.0.0",
+  "nodes": [
+    { "id": "x", "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 5 } },
+    {
+      "id": "compute",
+      "blocks": [
+        {
+          "id": "entry",
+          "instructions": [
+            { "kind": "op", "target": "doubled", "ns": "core", "name": "mul", "args": ["x", "x"] }
+          ],
+          "terminator": { "kind": "return", "value": "doubled" }
+        }
+      ],
+      "entry": "entry"
+    }
+  ],
+  "result": "compute"
 }
 ```
 
@@ -453,9 +488,15 @@ LIR replaces the expression DAG with basic blocks:
 
 ### 8.5 Relationship to CIR/EIR
 
-LIR is **not expression-based** — it represents a different paradigm (CFG vs expressions). Lowering from CIR/EIR to LIR involves:
+LIR now shares the same document structure as other layers (`nodes[]`/`result`), but typically uses block nodes for CFG-based control flow. LIR supports:
 
-- Converting expressions to instructions
+- **Expression nodes**: Evaluated first; values stored for reference by block nodes
+- **Block nodes**: CFG-based execution with instructions and terminators
+- **Hybrid documents**: Mix of both node types
+
+Lowering from CIR/EIR to LIR involves:
+
+- Converting expressions to instructions within blocks
 - Building basic blocks from control flow structures
 - Inserting phi nodes at join points
 
@@ -1218,15 +1259,30 @@ AIR, CIR, EIR, and LIR documents share a common structure:
 }
 ```
 
-### 13.2 Node Structure
+### 13.2 Node Structure (Hybrid)
 
+Nodes can be **expression nodes** or **block nodes**:
+
+**Expression Node:**
 ```json
 {
   "id": "string",      // Unique identifier
-  "type": { ... },     // Type annotation
+  "type": { ... },     // Optional type annotation
   "expr": { ... }      // Expression
 }
 ```
+
+**Block Node:**
+```json
+{
+  "id": "string",      // Unique identifier
+  "type": { ... },     // Optional type annotation
+  "blocks": [...],     // Array of basic blocks
+  "entry": "string"    // Entry block ID
+}
+```
+
+Each node MUST have either `expr` OR (`blocks` and `entry`), but not both.
 
 ### 13.3 Expression Kinds
 
