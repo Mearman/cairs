@@ -122,12 +122,12 @@ export class Evaluator {
 
 		switch (expr.kind) {
 		case "lit":
-			return this.evalLit(expr, env, state);
+			return this.evalLit(expr);
 
 		case "var":
-			return this.evalVar(expr, env, state);
+			return this.evalVar(expr, env);
 
-		case "ref":
+		case "ref": {
 			// For inline expressions, ref could be a variable reference
 			// Check environment first (for let-bound variables or lambda params)
 			const refValue = env.get(expr.id);
@@ -136,6 +136,7 @@ export class Evaluator {
 			}
 			// Otherwise, this is a node reference that should be resolved at program level
 			throw new Error("Ref must be resolved during program evaluation");
+		}
 
 		case "call":
 			return this.evalCall(expr, env, state);
@@ -147,19 +148,19 @@ export class Evaluator {
 			return this.evalLet(expr, env, state);
 
 		case "airRef":
-			return this.evalAirRef(expr, env, state);
+			return this.evalAirRef();
 
 		case "predicate":
-			return this.evalPredicate(expr, env, state);
+			return this.evalPredicate();
 
 		case "lambda":
-			return this.evalLambda(expr, env, state);
+			return this.evalLambda();
 
 		case "callExpr":
-			return this.evalCallExpr(expr, env, state);
+			return this.evalCallExpr();
 
 		case "fix":
-			return this.evalFix(expr, env, state);
+			return this.evalFix();
 
 		// PIR expressions - not supported in synchronous evaluator
 		case "par":
@@ -180,11 +181,7 @@ export class Evaluator {
 		}
 	}
 
-	private evalLit(
-		expr: { kind: "lit"; type: Type; value: unknown },
-		_env: ValueEnv,
-		_state: EvalContext,
-	): Value {
+	private evalLit(expr: { kind: "lit"; type: Type; value: unknown }): Value {
 		const t = expr.type;
 		const v = expr.value;
 
@@ -199,11 +196,11 @@ export class Evaluator {
 			return floatVal(Number(v));
 		case "string":
 			return stringVal(String(v));
-		case "list":
+		case "list": {
 			if (!Array.isArray(v))
 				return errorVal(ErrorCodes.TypeError, "List value must be array");
-				// Convert raw values to Value objects based on element type
-			const listElementType = t.of ?? (t as { of?: Type; elementType?: Type }).elementType ?? { kind: "int" };
+			// Convert raw values to Value objects based on element type
+			const listElementType = t.of;
 			const listElements = (v as unknown[]).map(elem => {
 				// Check if already a Value object first
 				if (typeof elem === "object" && elem !== null && "kind" in elem) {
@@ -226,6 +223,8 @@ export class Evaluator {
 				return intVal(Number(elem)); // Default to int
 			});
 			return listVal(listElements);
+		}
+
 		case "set":
 			if (!Array.isArray(v))
 				return errorVal(ErrorCodes.TypeError, "Set value must be array");
@@ -255,11 +254,7 @@ export class Evaluator {
 	 *          -------
 	 *          ρ ⊢ var(x) ⇓ v
 	 */
-	private evalVar(
-		expr: { kind: "var"; name: string },
-		env: ValueEnv,
-		_state: EvalContext,
-	): Value {
+	private evalVar(expr: { kind: "var"; name: string }, env: ValueEnv): Value {
 		const value = lookupValue(env, expr.name);
 		if (!value) {
 			return errorVal(
@@ -281,7 +276,7 @@ export class Evaluator {
 		state: EvalContext,
 	): Value {
 		// Check if args are node refs (strings) or inline expressions (objects)
-		const hasInlineArgs = expr.args.some(arg => typeof arg === "object" && arg !== null);
+		const hasInlineArgs = expr.args.some(arg => typeof arg !== "string");
 
 		if (!hasInlineArgs) {
 			// All args are node refs - this must be resolved during program evaluation
@@ -475,11 +470,7 @@ export class Evaluator {
 	/**
 	 * E-AirRef: Capture-avoiding inlining of airDef body
 	 */
-	private evalAirRef(
-		_expr: { kind: "airRef"; ns: string; name: string; args: string[] },
-		_env: ValueEnv,
-		_state: EvalContext,
-	): Value {
+	private evalAirRef(): Value {
 		// Arguments are node refs, resolved during program evaluation
 		throw new Error("AirRef must be resolved during program evaluation");
 	}
@@ -487,11 +478,7 @@ export class Evaluator {
 	/**
 	 * E-Pred: Create a predicate value
 	 */
-	private evalPredicate(
-		_expr: { kind: "predicate"; name: string; value: string },
-		_env: ValueEnv,
-		_state: EvalContext,
-	): Value {
+	private evalPredicate(): Value {
 		// Value is a node ref, resolved during program evaluation
 		throw new Error("Predicate must be resolved during program evaluation");
 	}
@@ -499,11 +486,7 @@ export class Evaluator {
 	/**
 	 * E-Λ: ρ ⊢ lambda(params, body) ⇓ ⟨params, body, ρ⟩
 	 */
-	private evalLambda(
-		_expr: { kind: "lambda"; params: string[]; body: string; type: Type },
-		_env: ValueEnv,
-		_state: EvalContext,
-	): Value {
+	private evalLambda(): Value {
 		// Body is a node ref, resolved during program evaluation
 		throw new Error("Lambda must be resolved during program evaluation");
 	}
@@ -514,11 +497,7 @@ export class Evaluator {
 	 *             -----------------------------------------
 	 *                      ρ ⊢ callExpr(fn, args) ⇓ v
 	 */
-	private evalCallExpr(
-		_expr: { kind: "callExpr"; fn: string; args: string[] },
-		_env: ValueEnv,
-		_state: EvalContext,
-	): Value {
+	private evalCallExpr(): Value {
 		// Fn and args are node refs, resolved during program evaluation
 		throw new Error("CallExpr must be resolved during program evaluation");
 	}
@@ -528,11 +507,7 @@ export class Evaluator {
 	 *        --------------------------------------------------
 	 *                      ρ ⊢ fix(fn) ⇓ v
 	 */
-	private evalFix(
-		_expr: { kind: "fix"; fn: string; type: Type },
-		_env: ValueEnv,
-		_state: EvalContext,
-	): Value {
+	private evalFix(): Value {
 		// Fn is a node ref, resolved during program evaluation
 		throw new Error("Fix must be resolved during program evaluation");
 	}
@@ -799,9 +774,7 @@ function evalExprWithNodeMap(
 		const callExpr = expr as { kind: "callExpr"; fn: string; args: string[] };
 		// Look up function: first in nodeValues, then in environment
 		let fnValue: Value | undefined = nodeValues.get(callExpr.fn);
-		if (!fnValue) {
-			fnValue = lookupValue(env, callExpr.fn);
-		}
+		fnValue ??= lookupValue(env, callExpr.fn);
 		// If not found, try evaluating the fn node (it might be a var referencing a param)
 		if (!fnValue) {
 			const fnNode = nodeMap.get(callExpr.fn);
@@ -827,9 +800,7 @@ function evalExprWithNodeMap(
 		const argValues: Value[] = [];
 		for (const argId of callExpr.args) {
 			let argValue = nodeValues.get(argId);
-			if (!argValue) {
-				argValue = lookupValue(env, argId);
-			}
+			argValue ??= lookupValue(env, argId);
 			// If not in nodeValues or env, try evaluating the node with current env
 			if (!argValue) {
 				const argNode = nodeMap.get(argId);
@@ -876,7 +847,13 @@ function evalExprWithNodeMap(
 		// Extend environment with parameters
 		let callEnv = fnValue.env;
 		for (let i = 0; i < fnValue.params.length; i++) {
-			const param = fnValue.params[i]!;
+			const param = fnValue.params[i];
+			if (param === undefined) {
+				return errorVal(
+					ErrorCodes.ValidationError,
+					`Parameter at index ${i} is undefined`,
+				);
+			}
 			const argValue = argValues[i];
 
 			if (argValue !== undefined) {
@@ -920,9 +897,7 @@ function evalExprWithNodeMap(
 		const refExpr = expr as { kind: "ref"; id: string };
 		// Look up in nodeValues first, then environment
 		let value = nodeValues.get(refExpr.id);
-		if (!value) {
-			value = lookupValue(env, refExpr.id);
-		}
+		value ??= lookupValue(env, refExpr.id);
 		if (!value) {
 			return errorVal(ErrorCodes.DomainError, "Reference not found: " + refExpr.id);
 		}
@@ -935,9 +910,7 @@ function evalExprWithNodeMap(
 		const argValues: Value[] = [];
 		for (const argId of callExpr.args) {
 			let argValue = nodeValues.get(argId);
-			if (!argValue) {
-				argValue = lookupValue(env, argId);
-			}
+			argValue ??= lookupValue(env, argId);
 			// If not found, try evaluating the arg node (it might be a bound node like var)
 			if (!argValue) {
 				const argNode = nodeMap.get(argId);
@@ -1154,7 +1127,6 @@ function evaluateBlockNode<B extends { id: string; instructions: unknown[]; term
 
 	// Runtime state
 	let vars: ValueEnv = env;
-	let predecessor: string | undefined;
 	let steps = 0;
 	const maxSteps = options?.maxSteps ?? 10000;
 
@@ -1181,15 +1153,20 @@ function evaluateBlockNode<B extends { id: string; instructions: unknown[]; term
 		}
 
 		// Execute terminator
-		const termResult = executeBlockTerminator(currentBlock.terminator, vars, nodeValues, predecessor);
+		const termResult = executeBlockTerminator(currentBlock.terminator, vars, nodeValues);
 		if (termResult.returnValue !== undefined) {
 			return termResult.returnValue;
 		}
 		if (termResult.error) {
 			return termResult.error;
 		}
-		predecessor = currentBlockId;
-		currentBlockId = termResult.nextBlock!;
+		if (termResult.nextBlock === undefined) {
+			return errorVal(
+				ErrorCodes.ValidationError,
+				"Terminator returned without nextBlock, returnValue, or error",
+			);
+		}
+		currentBlockId = termResult.nextBlock;
 	}
 
 	return voidVal();
@@ -1297,7 +1274,6 @@ function executeBlockTerminator(
 	term: LirTerminator,
 	vars: ValueEnv,
 	nodeValues: Map<string, Value>,
-	_predecessor?: string,
 ): BlockTerminatorResult {
 	switch (term.kind) {
 	case "jump":
@@ -1462,9 +1438,7 @@ function evalNode(
 				}
 
 				// If still not found, try looking up as a variable in the environment
-				if (!argValue) {
-					argValue = lookupValue(currentEnv, arg);
-				}
+				argValue ??= lookupValue(currentEnv, arg);
 
 				if (!argValue) {
 					return {
@@ -1523,9 +1497,7 @@ function evalNode(
 	case "if": {
 		// Look up condition in nodeValues first, then in environment (for let-bound variables)
 		let condValue = nodeValues.get(expr.cond);
-		if (!condValue) {
-			condValue = lookupValue(env, expr.cond);
-		}
+		condValue ??= lookupValue(env, expr.cond);
 		// If still not found, try evaluating the condition node with current env
 		if (!condValue) {
 			const condNode = nodeMap.get(expr.cond);
@@ -1552,9 +1524,7 @@ function evalNode(
 
 		// Try to get branch value from nodeValues or environment first
 		let branchValue = nodeValues.get(branchId);
-		if (!branchValue) {
-			branchValue = lookupValue(env, branchId);
-		}
+		branchValue ??= lookupValue(env, branchId);
 		if (branchValue) {
 			return { value: branchValue, env };
 		}
@@ -1776,7 +1746,27 @@ function evalNode(
 		// Create environment with argument bindings
 		let defEnv = emptyValueEnv();
 		for (let i = 0; i < def.params.length; i++) {
-			defEnv = extendValueEnv(defEnv, def.params[i]!, argValues[i]!);
+			const param = def.params[i];
+			const argValue = argValues[i];
+			if (param === undefined) {
+				return {
+					value: errorVal(
+						ErrorCodes.ValidationError,
+						`Parameter at index ${i} is undefined`,
+					),
+					env,
+				};
+			}
+			if (argValue === undefined) {
+				return {
+					value: errorVal(
+						ErrorCodes.ValidationError,
+						`Argument value at index ${i} is undefined`,
+					),
+					env,
+				};
+			}
+			defEnv = extendValueEnv(defEnv, param, argValue);
 		}
 
 		// Evaluate the def body
@@ -1788,9 +1778,7 @@ function evalNode(
 				const callArgValues: Value[] = [];
 				for (const argId of callExpr.args) {
 					let argValue = lookupValue(defEnv, argId);
-					if (!argValue) {
-						argValue = nodeValues.get(argId);
-					}
+					argValue ??= nodeValues.get(argId);
 					if (!argValue) {
 						return {
 							value: errorVal(
@@ -1902,10 +1890,7 @@ function evalNode(
 	case "callExpr": {
 		// Look up function: first in nodeValues, then in environment (for lambda params)
 		let fnValue = nodeValues.get(expr.fn);
-		if (!fnValue) {
-			// Try looking up in the environment (fn might be a lambda parameter)
-			fnValue = lookupValue(env, expr.fn);
-		}
+		fnValue ??= lookupValue(env, expr.fn);
 		if (!fnValue) {
 			return {
 				value: errorVal(
@@ -1933,9 +1918,7 @@ function evalNode(
 		for (const argId of expr.args) {
 			// Look up in nodeValues first, then in environment (for lambda params)
 			let argValue = nodeValues.get(argId);
-			if (!argValue) {
-				argValue = lookupValue(env, argId);
-			}
+			argValue ??= lookupValue(env, argId);
 			if (!argValue) {
 				return {
 					value: errorVal(
@@ -1983,7 +1966,16 @@ function evalNode(
 		// We have at least the min arity - do full application with defaults for omitted optional params
 		let callEnv = fnValue.env;
 		for (let i = 0; i < fnValue.params.length; i++) {
-			const param = fnValue.params[i]!;
+			const param = fnValue.params[i];
+			if (param === undefined) {
+				return {
+					value: errorVal(
+						ErrorCodes.ValidationError,
+						`Parameter at index ${i} is undefined`,
+					),
+					env,
+				};
+			}
 			const argValue = argValues[i];
 
 			if (argValue !== undefined) {
@@ -2030,9 +2022,7 @@ function evalNode(
 				// First try the call environment (for lambda parameters)
 				let argValue = lookupValue(callEnv, argId);
 				// If not found, try nodeValues (for node references)
-				if (!argValue) {
-					argValue = nodeValues.get(argId);
-				}
+				argValue ??= nodeValues.get(argId);
 				if (!argValue) {
 					return {
 						value: errorVal(
@@ -2135,7 +2125,17 @@ function evalNode(
 		// Create the fixed point by unrolling: fix(f) = f(fix(f))
 		// For factorial: fix(λrec.λn.body) = (λrec.λn.body)(fix(λrec.λn.body))
 		// The result is λn.body with rec bound to the fixed point
-		const param = fnValue.params[0]!.name;
+		const firstParam = fnValue.params[0];
+		if (firstParam === undefined) {
+			return {
+				value: errorVal(
+					ErrorCodes.ArityError,
+					"fix requires a function with at least one parameter",
+				),
+				env,
+			};
+		}
+		const param = firstParam.name;
 
 		// Create a placeholder for the fixed point (will be replaced)
 		// We need to create a self-referential closure
@@ -2292,9 +2292,7 @@ export function evaluateEIR(
 		nodeValues.set(node.id, result.value);
 
 		// Update state environment from node result
-		if (result.env) {
-			state.env = result.env;
-		}
+		state.env = result.env;
 
 		// Don't return early on errors - let try/catch expressions handle them
 		// Continue evaluating all nodes so that try expressions can catch errors
@@ -2549,7 +2547,7 @@ function evalEIRExpr(
 		// E-While: Loop while condition is true
 		let loopResult: Value = voidVal();
 
-		while (true) {
+		for (;;) {
 			state.steps++;
 			if (state.steps > state.maxSteps) {
 				return {
@@ -2683,7 +2681,7 @@ function evalEIRExpr(
 		let loopEnv = extendValueEnv(state.env, e.var, initResult.value);
 		let loopResult: Value = voidVal();
 
-		while (true) {
+		for (;;) {
 			state.steps++;
 			if (state.steps > state.maxSteps) {
 				return {
@@ -2928,9 +2926,7 @@ function evalEIRExpr(
 			}
 
 			// Update iterEnv with the result environment (for assign expressions)
-			if (bodyResult.env) {
-				iterEnv = bodyResult.env;
-			}
+			iterEnv = bodyResult.env;
 
 			if (bodyResult.refCells) {
 				state.refCells = bodyResult.refCells;
