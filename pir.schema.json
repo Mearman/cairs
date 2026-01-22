@@ -1,0 +1,477 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/Mearman/cairs/refs/heads/main/pir.schema.json",
+  "title": "PIR (Parallel Intermediate Representation)",
+  "description": "Parallel IR extending EIR with async primitives (par, spawn, await, channels) for concurrent execution.",
+  "allOf": [
+    {
+      "$ref": "https://raw.githubusercontent.com/Mearman/cairs/refs/heads/main/eir.schema.json"
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "version": {
+          "type": "string",
+          "pattern": "^2\\.[0-9]+\\.[0-9]+$"
+        },
+        "capabilities": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["async", "parallel", "channels", "hybrid"]
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z][A-Za-z0-9_\\-]*$"
+    },
+    "node": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id"],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "type": {
+          "$ref": "https://raw.githubusercontent.com/Mearman/cairs/refs/heads/main/air.schema.json#/$defs/type"
+        },
+        "expr": {
+          "$ref": "#/$defs/exprPir"
+        },
+        "blocks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/pirBlock"
+          }
+        },
+        "entry": {
+          "$ref": "#/$defs/id",
+          "description": "Entry block identifier for block-based nodes"
+        }
+      },
+      "oneOf": [
+        {
+          "required": ["expr"]
+        },
+        {
+          "required": ["blocks", "entry"]
+        }
+      ]
+    },
+    "pirBlock": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "instructions", "terminator"],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "instructions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/pirInstruction"
+          }
+        },
+        "terminator": {
+          "$ref": "#/$defs/pirTerminator"
+        }
+      }
+    },
+    "exprPir": {
+      "oneOf": [
+        {
+          "$ref": "https://raw.githubusercontent.com/Mearman/cairs/refs/heads/main/eir.schema.json#/$defs/exprEir"
+        },
+        {
+          "$ref": "#/$defs/expr_par"
+        },
+        {
+          "$ref": "#/$defs/expr_spawn"
+        },
+        {
+          "$ref": "#/$defs/expr_await"
+        },
+        {
+          "$ref": "#/$defs/expr_channel"
+        },
+        {
+          "$ref": "#/$defs/expr_send"
+        },
+        {
+          "$ref": "#/$defs/expr_recv"
+        },
+        {
+          "$ref": "#/$defs/expr_select"
+        },
+        {
+          "$ref": "#/$defs/expr_race"
+        }
+      ]
+    },
+    "expr_par": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "branches"],
+      "properties": {
+        "kind": {
+          "const": "par"
+        },
+        "branches": {
+          "type": "array",
+          "minItems": 2,
+          "items": {
+            "$ref": "#/$defs/id"
+          }
+        }
+      }
+    },
+    "expr_spawn": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "task"],
+      "properties": {
+        "kind": {
+          "const": "spawn"
+        },
+        "task": {
+          "$ref": "#/$defs/id"
+        }
+      }
+    },
+    "expr_await": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "future"],
+      "properties": {
+        "kind": {
+          "const": "await"
+        },
+        "future": {
+          "$ref": "#/$defs/id"
+        }
+      }
+    },
+    "expr_channel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "channelType"],
+      "properties": {
+        "kind": {
+          "const": "channel"
+        },
+        "channelType": {
+          "type": "string",
+          "enum": ["mpsc", "spsc", "mpmc", "broadcast"]
+        },
+        "bufferSize": {
+          "$ref": "#/$defs/id"
+        }
+      }
+    },
+    "expr_send": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "channel", "value"],
+      "properties": {
+        "kind": {
+          "const": "send"
+        },
+        "channel": {
+          "$ref": "#/$defs/id"
+        },
+        "value": {
+          "$ref": "#/$defs/id"
+        }
+      }
+    },
+    "expr_recv": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "channel"],
+      "properties": {
+        "kind": {
+          "const": "recv"
+        },
+        "channel": {
+          "$ref": "#/$defs/id"
+        }
+      }
+    },
+    "expr_select": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "futures"],
+      "properties": {
+        "kind": {
+          "const": "select"
+        },
+        "futures": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/id"
+          }
+        },
+        "timeout": {
+          "$ref": "#/$defs/id"
+        }
+      }
+    },
+    "expr_race": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "tasks"],
+      "properties": {
+        "kind": {
+          "const": "race"
+        },
+        "tasks": {
+          "type": "array",
+          "minItems": 2,
+          "items": {
+            "$ref": "#/$defs/id"
+          }
+        }
+      }
+    },
+    "pirInstruction": {
+      "oneOf": [
+        {
+          "$ref": "https://raw.githubusercontent.com/Mearman/cairs/refs/heads/main/eir.schema.json#/$defs/expr_effect"
+        },
+        {
+          "$ref": "#/$defs/ins_spawn"
+        },
+        {
+          "$ref": "#/$defs/ins_channelOp"
+        },
+        {
+          "$ref": "#/$defs/ins_await"
+        }
+      ]
+    },
+    "ins_spawn": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "target", "entry"],
+      "properties": {
+        "kind": {
+          "const": "spawn"
+        },
+        "target": {
+          "$ref": "#/$defs/id"
+        },
+        "entry": {
+          "$ref": "#/$defs/id"
+        },
+        "args": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/id"
+          }
+        }
+      }
+    },
+    "ins_channelOp": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "op", "channel"],
+      "properties": {
+        "kind": {
+          "const": "channelOp"
+        },
+        "op": {
+          "type": "string",
+          "enum": ["send", "recv", "trySend", "tryRecv"]
+        },
+        "target": {
+          "$ref": "#/$defs/id"
+        },
+        "channel": {
+          "$ref": "#/$defs/id"
+        },
+        "value": {
+          "$ref": "#/$defs/id"
+        }
+      }
+    },
+    "ins_await": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "target", "future"],
+      "properties": {
+        "kind": {
+          "const": "await"
+        },
+        "target": {
+          "$ref": "#/$defs/id"
+        },
+        "future": {
+          "$ref": "#/$defs/id"
+        }
+      }
+    },
+    "pirTerminator": {
+      "oneOf": [
+        {
+          "$ref": "https://raw.githubusercontent.com/Mearman/cairs/refs/heads/main/lir.schema.json#/$defs/term_jump"
+        },
+        {
+          "$ref": "https://raw.githubusercontent.com/Mearman/cairs/refs/heads/main/lir.schema.json#/$defs/term_branch"
+        },
+        {
+          "$ref": "https://raw.githubusercontent.com/Mearman/cairs/refs/heads/main/lir.schema.json#/$defs/term_return"
+        },
+        {
+          "$ref": "#/$defs/term_fork"
+        },
+        {
+          "$ref": "#/$defs/term_join"
+        },
+        {
+          "$ref": "#/$defs/term_suspend"
+        }
+      ]
+    },
+    "term_fork": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "branches", "continuation"],
+      "properties": {
+        "kind": {
+          "const": "fork"
+        },
+        "branches": {
+          "type": "array",
+          "minItems": 2,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["block", "taskId"],
+            "properties": {
+              "block": {
+                "$ref": "#/$defs/id"
+              },
+              "taskId": {
+                "$ref": "#/$defs/id"
+              }
+            }
+          }
+        },
+        "continuation": {
+          "$ref": "#/$defs/id"
+        }
+      }
+    },
+    "term_join": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "tasks", "to"],
+      "properties": {
+        "kind": {
+          "const": "join"
+        },
+        "tasks": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/id"
+          }
+        },
+        "results": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/id"
+          }
+        },
+        "to": {
+          "$ref": "#/$defs/id"
+        }
+      }
+    },
+    "term_suspend": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "future", "resumeBlock"],
+      "properties": {
+        "kind": {
+          "const": "suspend"
+        },
+        "future": {
+          "$ref": "#/$defs/id"
+        },
+        "resumeBlock": {
+          "$ref": "#/$defs/id"
+        }
+      }
+    },
+    "type_future": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "of"],
+      "properties": {
+        "kind": {
+          "const": "future"
+        },
+        "of": {
+          "$ref": "https://raw.githubusercontent.com/Mearman/cairs/refs/heads/main/air.schema.json#/$defs/type"
+        }
+      }
+    },
+    "type_channel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "channelType", "of"],
+      "properties": {
+        "kind": {
+          "const": "channel"
+        },
+        "channelType": {
+          "type": "string",
+          "enum": ["mpsc", "spsc", "mpmc", "broadcast"]
+        },
+        "of": {
+          "$ref": "https://raw.githubusercontent.com/Mearman/cairs/refs/heads/main/air.schema.json#/$defs/type"
+        }
+      }
+    },
+    "type_task": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "returns"],
+      "properties": {
+        "kind": {
+          "const": "task"
+        },
+        "returns": {
+          "$ref": "https://raw.githubusercontent.com/Mearman/cairs/refs/heads/main/air.schema.json#/$defs/type"
+        }
+      }
+    },
+    "type_async": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "params", "returns"],
+      "properties": {
+        "kind": {
+          "const": "async"
+        },
+        "params": {
+          "type": "array",
+          "items": {
+            "$ref": "https://raw.githubusercontent.com/Mearman/cairs/refs/heads/main/air.schema.json#/$defs/type"
+          }
+        },
+        "returns": {
+          "$ref": "#/$defs/type_future"
+        }
+      }
+    }
+  }
+}
