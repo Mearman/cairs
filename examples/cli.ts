@@ -18,18 +18,32 @@ import { fileURLToPath } from "node:url";
 import {
 	validateAIR,
 	validateCIR,
+	validateEIR,
+	validateLIR,
 	createCoreRegistry,
 	createBoolRegistry,
 	createListRegistry,
 	createSetRegistry,
 	evaluateProgram,
+	evaluateEIR,
+	evaluateLIR,
 	typeCheckProgram,
 	registerDef,
+	createQueuedEffectRegistry,
+	createDefaultEffectRegistry,
 	type AIRDocument,
 	type CIRDocument,
+	type EIRDocument,
+	type LIRDocument,
 	type Value,
 	type Defs,
 } from "../src/index.js";
+import {
+	parseInputString,
+	readInputsFile,
+	parseArgs,
+	type Options,
+} from "../src/cli-utils.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const EXAMPLES_DIR = __dirname;
@@ -49,17 +63,10 @@ const colors = {
 
 interface ExampleInfo {
   path: string;
-  ir: "AIR" | "CIR";
+  ir: "AIR" | "CIR" | "EIR" | "LIR";
   category: string;
   name: string;
   description?: string;
-}
-
-interface Options {
-  verbose: boolean;
-  validate: boolean;
-  help: boolean;
-  list: boolean;
 }
 
 function print(msg: string, color: keyof typeof colors = "reset"): void {
@@ -94,49 +101,6 @@ function formatValue(value: Value, indent = 0): string {
 	return `${pad}${JSON.stringify(value)}`;
 }
 
-function parseArgs(args: string[]): { path: string | null; options: Options } {
-	const options: Options = {
-		verbose: false,
-		validate: false,
-		help: false,
-		list: false,
-	};
-	let path: string | null = null;
-
-	const normalized = args.flatMap((arg) => {
-		// Support subcommand style: `examples list`, `examples validate <path>`
-		if (arg === "list") return ["--list"];
-		if (arg === "validate") return ["--validate"];
-		if (arg === "help") return ["--help"];
-		return [arg];
-	});
-
-	for (const arg of normalized) {
-		switch (arg) {
-		case "--verbose":
-		case "-v":
-			options.verbose = true;
-			break;
-		case "--validate":
-			options.validate = true;
-			break;
-		case "--help":
-		case "-h":
-			options.help = true;
-			break;
-		case "--list":
-		case "-l":
-			options.list = true;
-			break;
-		default:
-			if (!arg.startsWith("-")) {
-				path = arg;
-			}
-		}
-	}
-
-	return { path, options };
-}
 
 async function findExamples(dir: string, baseDir = dir): Promise<ExampleInfo[]> {
 	const examples: ExampleInfo[] = [];
@@ -164,6 +128,24 @@ async function findExamples(dir: string, baseDir = dir): Promise<ExampleInfo[]> 
 			examples.push({
 				path: relPath.replace(/\.cir\.json$/, ""),
 				ir: "CIR",
+				category: parts.slice(0, -1).join("/"),
+				name: entry,
+			});
+		} else if (entry.endsWith(".eir.json")) {
+			const relPath = relative(baseDir, fullPath);
+			const parts = relPath.split("/");
+			examples.push({
+				path: relPath.replace(/\.eir\.json$/, ""),
+				ir: "EIR",
+				category: parts.slice(0, -1).join("/"),
+				name: entry,
+			});
+		} else if (entry.endsWith(".lir.json")) {
+			const relPath = relative(baseDir, fullPath);
+			const parts = relPath.split("/");
+			examples.push({
+				path: relPath.replace(/\.lir\.json$/, ""),
+				ir: "LIR",
 				category: parts.slice(0, -1).join("/"),
 				name: entry,
 			});
@@ -199,7 +181,7 @@ function listExamples(examples: ExampleInfo[]): void {
 		for (const [category, items] of Object.entries(byCategory)) {
 			print(`  ${colors.dim}${category}/${colors.reset}`, "dim");
 			for (const item of items) {
-				const name = item.path.replace(/^air\//, "").replace(/^cir\//, "");
+				const name = item.path.replace(/^air\//, "").replace(/^cir\//, "").replace(/^eir\//, "").replace(/^lir\//, "");
 				print(`    ${colors.cyan}${name}${colors.reset}`, "cyan");
 			}
 		}
@@ -207,9 +189,14 @@ function listExamples(examples: ExampleInfo[]): void {
 	}
 }
 
-async function loadExample(path: string): Promise<{ doc: AIRDocument | CIRDocument; ir: "AIR" | "CIR" } | null> {
+async function loadExample(path: string): Promise<{ doc: AIRDocument | CIRDocument | EIRDocument | LIRDocument; ir: "AIR" | "CIR" | "EIR" | "LIR" } | null> {
 	const isCirHint = path.includes("cir/") || path.startsWith("cir/") || path.endsWith(".cir.json");
-	const defaultExt = isCirHint ? ".cir.json" : ".air.json";
+	const isEirHint = path.includes("eir/") || path.startsWith("eir/") || path.endsWith(".eir.json");
+	const isLirHint = path.includes("lir/") || path.startsWith("lir/") || path.endsWith(".lir.json");
+	let defaultExt = ".air.json";
+	if (isLirHint) defaultExt = ".lir.json";
+	else if (isEirHint) defaultExt = ".eir.json";
+	else if (isCirHint) defaultExt = ".cir.json";
 	const candidates: string[] = [];
 
 	// If caller provided an explicit filename (with or without extension), try that first.
@@ -219,16 +206,18 @@ async function loadExample(path: string): Promise<{ doc: AIRDocument | CIRDocume
 		candidates.push(`${path}${defaultExt}`);
 	}
 
-	// If the path is a directory, look for <basename>.{air|cir}.json or a single json file inside.
+	// If the path is a directory, look for <basename>.{air|cir|eir|lir}.json or a single json file inside.
 	const dirPath = join(EXAMPLES_DIR, path);
 	try {
 		const s = await stat(dirPath);
 		if (s.isDirectory()) {
 			const baseName = path.split("/").pop() || "";
+			candidates.push(join(path, `${baseName}.lir.json`));
+			candidates.push(join(path, `${baseName}.eir.json`));
 			candidates.push(join(path, `${baseName}.cir.json`));
 			candidates.push(join(path, `${baseName}.air.json`));
 			const entries = await readdir(dirPath);
-			const jsons = entries.filter((e) => e.endsWith(".json"));
+			const jsons = entries.filter((e) => e.endsWith(".json") && !e.endsWith(".inputs.json"));
 			if (jsons.length === 1) {
 				candidates.push(join(path, jsons[0]));
 			}
@@ -241,8 +230,11 @@ async function loadExample(path: string): Promise<{ doc: AIRDocument | CIRDocume
 		const fullPath = join(EXAMPLES_DIR, rel);
 		try {
 			const content = await readFile(fullPath, "utf-8");
-			const doc = JSON.parse(content) as AIRDocument | CIRDocument;
-			const ir: "AIR" | "CIR" = fullPath.endsWith(".cir.json") ? "CIR" : "AIR";
+			const doc = JSON.parse(content) as AIRDocument | CIRDocument | EIRDocument | LIRDocument;
+			let ir: "AIR" | "CIR" | "EIR" | "LIR" = "AIR";
+			if (fullPath.endsWith(".lir.json")) ir = "LIR";
+			else if (fullPath.endsWith(".eir.json")) ir = "EIR";
+			else if (fullPath.endsWith(".cir.json")) ir = "CIR";
 			return { doc, ir };
 		} catch {
 			continue;
@@ -266,12 +258,21 @@ async function runExample(path: string, options: Options): Promise<boolean> {
 
 		// Validate
 		print(`${colors.bold}Validating...${colors.reset}`, "reset");
-		const validationResult = ir === "AIR" ? validateAIR(doc) : validateCIR(doc);
+		let validationResult = { valid: true, errors: [] } as { valid: boolean; errors: any[] };
+		if (ir === "AIR") {
+			validationResult = validateAIR(doc as AIRDocument);
+		} else if (ir === "CIR") {
+			validationResult = validateCIR(doc as CIRDocument);
+		} else if (ir === "EIR") {
+			validationResult = validateEIR(doc as EIRDocument);
+		} else {
+			validationResult = validateLIR(doc as LIRDocument);
+		}
 
 		if (!validationResult.valid) {
 			// Filter out known CIR validation issues (lambda params reported as non-existent)
 			const knownCIRIssues = validationResult.errors.filter(
-				(e) => !e.message.includes("Reference to non-existent node") || ir === "AIR"
+				(err: any) => !err.message.includes("Reference to non-existent node") || ir === "AIR"
 			);
 
 			if (knownCIRIssues.length > 0) {
@@ -295,33 +296,83 @@ async function runExample(path: string, options: Options): Promise<boolean> {
 			return true;
 		}
 
-		// Type check
-		if (options.verbose) {
-			print(`${colors.bold}Type checking...${colors.reset}`, "reset");
-		}
 		// Merge all registries into one Map
 		let registry = createCoreRegistry();
 		registry = new Map([...registry, ...createBoolRegistry()]);
 		registry = new Map([...registry, ...createListRegistry()]);
 		registry = new Map([...registry, ...createSetRegistry()]);
 
-		// Build defs from airDefs
+		// Build defs from airDefs (if applicable)
 		let defs: Defs = new Map();
-		if (doc.airDefs) {
-			for (const airDef of doc.airDefs) {
+		if ((ir === "AIR" || ir === "CIR" || ir === "EIR") && (doc as any).airDefs) {
+			for (const airDef of (doc as any).airDefs) {
 				defs = registerDef(defs, airDef);
 			}
 		}
 
-		const typeCheckResult = typeCheckProgram(doc, registry, defs);
-		if (options.verbose) {
-			print(`${colors.green}✓ Type check passed${colors.reset}`, "green");
-			print(`${colors.dim}Result type: ${JSON.stringify(typeCheckResult.resultType)}${colors.reset}\n`, "dim");
+		// Type check (AIR/CIR only)
+		if (ir === "AIR" || ir === "CIR") {
+			if (options.verbose) {
+				print(`${colors.bold}Type checking...${colors.reset}`, "reset");
+			}
+			const typeCheckResult = typeCheckProgram(doc as AIRDocument | CIRDocument, registry, defs);
+			if (options.verbose) {
+				print(`${colors.green}✓ Type check passed${colors.reset}`, "green");
+				print(`${colors.dim}Result type: ${JSON.stringify(typeCheckResult.resultType)}${colors.reset}\n`, "dim");
+			}
+		}
+
+		// Get inputs for interactive examples
+		let inputArray: (string | number)[] = [];
+		if (ir === "EIR" || ir === "LIR") {
+			// Try to get inputs from various sources in precedence order
+			if (options.inputs) {
+				inputArray = parseInputString(options.inputs);
+				if (options.verbose) {
+					print(`${colors.dim}Using inputs from --inputs flag${colors.reset}`, "dim");
+				}
+			} else if (options.inputsFile) {
+				const fileInputs = await readInputsFile(options.inputsFile);
+				if (fileInputs) {
+					inputArray = fileInputs;
+					if (options.verbose) {
+						print(`${colors.dim}Using inputs from --inputs-file${colors.reset}`, "dim");
+					}
+				}
+			} else {
+				// Try to load fixture file
+				const exampleDir = dirname(join(EXAMPLES_DIR, path));
+				const baseName = path.split("/").pop() || "";
+				const fixtureFile = join(exampleDir, `${baseName}.inputs.json`);
+				const fixtureInputs = await readInputsFile(fixtureFile);
+				if (fixtureInputs) {
+					inputArray = fixtureInputs;
+					if (options.verbose) {
+						print(`${colors.dim}Using inputs from fixture file${colors.reset}`, "dim");
+					}
+				}
+			}
 		}
 
 		// Evaluate
 		print(`${colors.bold}Evaluating...${colors.reset}`, "reset");
-		const evalResult = evaluateProgram(doc, registry, defs);
+		let evalResult: Value;
+
+		if (ir === "EIR") {
+			const effectRegistry = inputArray.length > 0
+				? createQueuedEffectRegistry(inputArray)
+				: createDefaultEffectRegistry();
+			const eirResult = evaluateEIR(doc as EIRDocument, registry, defs, undefined, { effects: effectRegistry });
+			evalResult = eirResult.result;
+		} else if (ir === "LIR") {
+			const effectRegistry = inputArray.length > 0
+				? createQueuedEffectRegistry(inputArray)
+				: createDefaultEffectRegistry();
+			const lirResult = evaluateLIR(doc as LIRDocument, registry, effectRegistry);
+			evalResult = lirResult.result;
+		} else {
+			evalResult = evaluateProgram(doc as AIRDocument | CIRDocument, registry, defs);
+		}
 
 		if (evalResult.kind === "error") {
 			print(`${colors.red}Evaluation error:${colors.reset} ${evalResult.code}`, "red");
@@ -353,11 +404,19 @@ async function runExample(path: string, options: Options): Promise<boolean> {
 		if (options.verbose) {
 			print(`${colors.dim}────────────────────────────────────────${colors.reset}`, "dim");
 			print(`${colors.dim}Version: ${doc.version}${colors.reset}`, "dim");
-			print(`${colors.dim}Nodes: ${doc.nodes.length}${colors.reset}`, "dim");
-			if (doc.airDefs && doc.airDefs.length > 0) {
-				print(`${colors.dim}AIR Defs: ${doc.airDefs.length}${colors.reset}`, "dim");
+			if ((ir === "AIR" || ir === "CIR" || ir === "EIR") && (doc as any).nodes) {
+				print(`${colors.dim}Nodes: ${(doc as any).nodes.length}${colors.reset}`, "dim");
+			} else if (ir === "LIR" && (doc as any).blocks) {
+				print(`${colors.dim}Blocks: ${(doc as any).blocks.length}${colors.reset}`, "dim");
 			}
-			print(`${colors.dim}Result: ${doc.result}${colors.reset}`, "dim");
+			if ((doc as any).airDefs && (doc as any).airDefs.length > 0) {
+				print(`${colors.dim}AIR Defs: ${(doc as any).airDefs.length}${colors.reset}`, "dim");
+			}
+			if ((ir === "AIR" || ir === "CIR" || ir === "EIR") && (doc as any).result) {
+				print(`${colors.dim}Result: ${(doc as any).result}${colors.reset}`, "dim");
+			} else if (ir === "LIR" && (doc as any).entry) {
+				print(`${colors.dim}Entry: ${(doc as any).entry}${colors.reset}`, "dim");
+			}
 			print("");
 		}
 
@@ -382,12 +441,15 @@ function showHelp(): void {
 	print(`${colors.bold}Examples:${colors.reset}`, "reset");
 	print("  pnpm run-example air/basics/arithmetic", "cyan");
 	print("  pnpm run-example cir/algorithms/factorial", "cyan");
+	print("  pnpm run-example eir/interactive/prompt-uppercase --inputs 'hello'", "cyan");
 	print("  pnpm run-example --list\n", "cyan");
 	print(`${colors.bold}Options:${colors.reset}`, "reset");
-	print("  -v, --verbose     Show detailed output", "reset");
-	print("  -l, --list        List all available examples", "reset");
-	print("  --validate        Only validate, don't evaluate", "reset");
-	print("  -h, --help        Show this help message\n", "reset");
+	print("  -v, --verbose         Show detailed output", "reset");
+	print("  -l, --list            List all available examples", "reset");
+	print("  --validate            Only validate, don't evaluate", "reset");
+	print("  --inputs <values>     Input values (comma-separated or JSON)", "reset");
+	print("  --inputs-file <path>  Read inputs from JSON file", "reset");
+	print("  -h, --help            Show this help message\n", "reset");
 	print(`${colors.bold}Example Paths:${colors.reset}`, "reset");
 	print("  air/basics/*           - Basic AIR expressions", "dim");
 	print("  air/control-flow/*     - Conditionals and let bindings", "dim");
@@ -396,6 +458,9 @@ function showHelp(): void {
 	print("  cir/algorithms/*       - Classic algorithms", "dim");
 	print("  cir/higher-order/*     - Map, filter, fold", "dim");
 	print("  cir/fixpoint/*         - Fixpoint combinator", "dim");
+	print("  eir/interactive/*      - Interactive input examples", "dim");
+	print("  eir/loops/*            - Loop constructs", "dim");
+	print("  lir/control-flow/*     - CFG-based control flow", "dim");
 	print("");
 }
 
