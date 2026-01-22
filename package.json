@@ -52,6 +52,9 @@
       "eslint --fix",
       "tsx scripts/typecheck-files.ts"
     ],
+    "eslint.config.ts": [
+      "eslint --fix"
+    ],
     "*.json": [
       "eslint --fix"
     ],
