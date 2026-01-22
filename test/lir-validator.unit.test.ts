@@ -3,29 +3,38 @@
 import assert from "node:assert";
 import { describe, it } from "node:test";
 import { validateLIR } from "../src/validator.js";
+import type { LirBlock } from "../src/types.js";
+
+// Helper to create LIR document with new node-based structure
+function makeLIRDoc(blocks: LirBlock[], entry: string, extras?: Record<string, unknown>) {
+	return {
+		version: "1.0.0",
+		...extras,
+		nodes: [{ id: "main", blocks, entry }],
+		result: "main",
+	};
+}
 
 describe("LIR Validation", () => {
 	it("should validate a minimal LIR document with single block", () => {
-		const doc = {
-			version: "1.0.0",
-			blocks: [
+		const doc = makeLIRDoc(
+			[
 				{
 					id: "bb0",
 					instructions: [],
 					terminator: { kind: "return" },
 				},
 			],
-			entry: "bb0",
-		};
+			"bb0",
+		);
 		const result = validateLIR(doc);
 		assert.strictEqual(result.valid, true);
 		assert.strictEqual(result.errors.length, 0);
 	});
 
 	it("should validate LIR document with jump terminator", () => {
-		const doc = {
-			version: "1.0.0",
-			blocks: [
+		const doc = makeLIRDoc(
+			[
 				{
 					id: "entry",
 					instructions: [],
@@ -37,16 +46,15 @@ describe("LIR Validation", () => {
 					terminator: { kind: "return" },
 				},
 			],
-			entry: "entry",
-		};
+			"entry",
+		);
 		const result = validateLIR(doc);
 		assert.strictEqual(result.valid, true);
 	});
 
 	it("should validate LIR document with branch terminator", () => {
-		const doc = {
-			version: "1.0.0",
-			blocks: [
+		const doc = makeLIRDoc(
+			[
 				{
 					id: "entry",
 					instructions: [],
@@ -63,16 +71,15 @@ describe("LIR Validation", () => {
 					terminator: { kind: "return" },
 				},
 			],
-			entry: "entry",
-		};
+			"entry",
+		);
 		const result = validateLIR(doc);
 		assert.strictEqual(result.valid, true);
 	});
 
 	it("should validate LIR document with assign instruction", () => {
-		const doc = {
-			version: "1.0.0",
-			blocks: [
+		const doc = makeLIRDoc(
+			[
 				{
 					id: "bb0",
 					instructions: [
@@ -85,16 +92,15 @@ describe("LIR Validation", () => {
 					terminator: { kind: "return", value: "x" },
 				},
 			],
-			entry: "bb0",
-		};
+			"bb0",
+		);
 		const result = validateLIR(doc);
 		assert.strictEqual(result.valid, true);
 	});
 
 	it("should validate LIR document with op instruction", () => {
-		const doc = {
-			version: "1.0.0",
-			blocks: [
+		const doc = makeLIRDoc(
+			[
 				{
 					id: "bb0",
 					instructions: [
@@ -109,16 +115,15 @@ describe("LIR Validation", () => {
 					terminator: { kind: "return", value: "result" },
 				},
 			],
-			entry: "bb0",
-		};
+			"bb0",
+		);
 		const result = validateLIR(doc);
 		assert.strictEqual(result.valid, true);
 	});
 
 	it("should validate LIR document with phi instruction", () => {
-		const doc = {
-			version: "1.0.0",
-			blocks: [
+		const doc = makeLIRDoc(
+			[
 				{
 					id: "bb0",
 					instructions: [
@@ -144,16 +149,15 @@ describe("LIR Validation", () => {
 					terminator: { kind: "jump", to: "bb0" },
 				},
 			],
-			entry: "bb0",
-		};
+			"bb0",
+		);
 		const result = validateLIR(doc);
 		assert.strictEqual(result.valid, true);
 	});
 
 	it("should validate LIR document with effect instruction", () => {
-		const doc = {
-			version: "1.0.0",
-			blocks: [
+		const doc = makeLIRDoc(
+			[
 				{
 					id: "bb0",
 					instructions: [
@@ -166,16 +170,15 @@ describe("LIR Validation", () => {
 					terminator: { kind: "return" },
 				},
 			],
-			entry: "bb0",
-		};
+			"bb0",
+		);
 		const result = validateLIR(doc);
 		assert.strictEqual(result.valid, true);
 	});
 
 	it("should validate LIR document with assignRef instruction", () => {
-		const doc = {
-			version: "1.0.0",
-			blocks: [
+		const doc = makeLIRDoc(
+			[
 				{
 					id: "bb0",
 					instructions: [
@@ -188,177 +191,167 @@ describe("LIR Validation", () => {
 					terminator: { kind: "return" },
 				},
 			],
-			entry: "bb0",
-		};
+			"bb0",
+		);
 		const result = validateLIR(doc);
 		assert.strictEqual(result.valid, true);
 	});
 
 	it("should validate LIR document with exit terminator", () => {
-		const doc = {
-			version: "1.0.0",
-			blocks: [
+		const doc = makeLIRDoc(
+			[
 				{
 					id: "bb0",
 					instructions: [],
 					terminator: { kind: "exit" },
 				},
 			],
-			entry: "bb0",
-		};
+			"bb0",
+		);
 		const result = validateLIR(doc);
 		assert.strictEqual(result.valid, true);
 	});
 
 	it("should reject LIR document with missing version", () => {
 		const doc = {
-			blocks: [
+			nodes: [
 				{
-					id: "bb0",
-					instructions: [],
-					terminator: { kind: "return" },
+					id: "main",
+					blocks: [
+						{
+							id: "bb0",
+							instructions: [],
+							terminator: { kind: "return" },
+						},
+					],
+					entry: "bb0",
 				},
 			],
-			entry: "bb0",
+			result: "main",
 		};
 		const result = validateLIR(doc);
 		assert.strictEqual(result.valid, false);
 	});
 
 	it("should reject LIR document with duplicate block IDs", () => {
-		const doc = {
-			version: "1.0.0",
-			blocks: [
+		const doc = makeLIRDoc(
+			[
 				{ id: "bb0", instructions: [], terminator: { kind: "return" } },
 				{ id: "bb0", instructions: [], terminator: { kind: "return" } },
 			],
-			entry: "bb0",
-		};
+			"bb0",
+		);
 		const result = validateLIR(doc);
 		assert.strictEqual(result.valid, false);
 		assert.ok(result.errors.some((e) => e.message.includes("Duplicate")));
 	});
 
 	it("should reject LIR document with non-existent entry block", () => {
-		const doc = {
-			version: "1.0.0",
-			blocks: [
-				{ id: "bb0", instructions: [], terminator: { kind: "return" } },
-			],
-			entry: "nonexistent",
-		};
+		const doc = makeLIRDoc(
+			[{ id: "bb0", instructions: [], terminator: { kind: "return" } }],
+			"nonexistent",
+		);
 		const result = validateLIR(doc);
 		assert.strictEqual(result.valid, false);
 		assert.ok(result.errors.length > 0);
 	});
 
 	it("should reject LIR document with jump to non-existent block", () => {
-		const doc = {
-			version: "1.0.0",
-			blocks: [
+		const doc = makeLIRDoc(
+			[
 				{
 					id: "bb0",
 					instructions: [],
 					terminator: { kind: "jump", to: "missing" },
 				},
 			],
-			entry: "bb0",
-		};
+			"bb0",
+		);
 		const result = validateLIR(doc);
 		assert.strictEqual(result.valid, false);
 	});
 
 	it("should reject LIR document with branch to non-existent then block", () => {
-		const doc = {
-			version: "1.0.0",
-			blocks: [
+		const doc = makeLIRDoc(
+			[
 				{
 					id: "bb0",
 					instructions: [],
 					terminator: { kind: "branch", cond: "x", then: "missing", else: "bb0" },
 				},
 			],
-			entry: "bb0",
-		};
+			"bb0",
+		);
 		const result = validateLIR(doc);
 		assert.strictEqual(result.valid, false);
 	});
 
 	it("should reject LIR document with branch to non-existent else block", () => {
-		const doc = {
-			version: "1.0.0",
-			blocks: [
+		const doc = makeLIRDoc(
+			[
 				{
 					id: "bb0",
 					instructions: [],
 					terminator: { kind: "branch", cond: "x", then: "bb0", else: "missing" },
 				},
 			],
-			entry: "bb0",
-		};
+			"bb0",
+		);
 		const result = validateLIR(doc);
 		assert.strictEqual(result.valid, false);
 	});
 
 	it("should reject LIR block with missing terminator", () => {
-		const doc = {
-			version: "1.0.0",
-			blocks: [
+		const doc = makeLIRDoc(
+			[
 				{
 					id: "bb0",
 					instructions: [],
 					terminator: undefined as unknown as { kind: "jump" },
 				},
 			],
-			entry: "bb0",
-		};
+			"bb0",
+		);
 		const result = validateLIR(doc);
 		assert.strictEqual(result.valid, false);
 	});
 
 	it("should reject LIR instruction with unknown kind", () => {
-		const doc = {
-			version: "1.0.0",
-			blocks: [
+		const doc = makeLIRDoc(
+			[
 				{
 					id: "bb0",
-					instructions: [
-						{ kind: "unknown" as const, target: "x" },
-					],
+					instructions: [{ kind: "unknown" as const, target: "x" }],
 					terminator: { kind: "return" },
 				},
 			],
-			entry: "bb0",
-		};
+			"bb0",
+		);
 		const result = validateLIR(doc);
 		assert.strictEqual(result.valid, false);
 	});
 
 	it("should reject LIR terminator with unknown kind", () => {
-		const doc = {
-			version: "1.0.0",
-			blocks: [
+		const doc = makeLIRDoc(
+			[
 				{
 					id: "bb0",
 					instructions: [],
 					terminator: { kind: "unknown" as const, to: "bb0" },
 				},
 			],
-			entry: "bb0",
-		};
+			"bb0",
+		);
 		const result = validateLIR(doc);
 		assert.strictEqual(result.valid, false);
 	});
 
 	it("should validate LIR document with capabilities", () => {
-		const doc = {
-			version: "1.0.0",
-			capabilities: ["eir", "effects"],
-			blocks: [
-				{ id: "bb0", instructions: [], terminator: { kind: "return" } },
-			],
-			entry: "bb0",
-		};
+		const doc = makeLIRDoc(
+			[{ id: "bb0", instructions: [], terminator: { kind: "return" } }],
+			"bb0",
+			{ capabilities: ["eir", "effects"] },
+		);
 		const result = validateLIR(doc);
 		assert.strictEqual(result.valid, true);
 	});
