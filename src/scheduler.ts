@@ -287,7 +287,10 @@ export class DeterministicScheduler implements TaskScheduler {
 			// Check if task is in queue - if so, execute it
 			const taskIndex = this.taskQueue.findIndex((t) => t.id === taskId);
 			if (taskIndex !== -1) {
-				const task = this.taskQueue[taskIndex]!;
+				const task = this.taskQueue[taskIndex];
+				if (!task) {
+					throw new Error(`Task at index ${taskIndex} not found in queue`);
+				}
 
 				// Remove from queue so we don't execute it twice
 				this.taskQueue.splice(taskIndex, 1);
@@ -312,7 +315,11 @@ export class DeterministicScheduler implements TaskScheduler {
 			}
 		}
 
-		return this.completedTasks.get(taskId)!;
+		const result = this.completedTasks.get(taskId);
+		if (!result) {
+			throw new Error(`Task ${taskId} not found in completed tasks`);
+		}
+		return result;
 	}
 
 	async checkGlobalSteps(): Promise<void> {
@@ -340,7 +347,10 @@ export class DeterministicScheduler implements TaskScheduler {
 			return;
 		}
 
-		const task = this.taskQueue.shift()!;
+		const task = this.taskQueue.shift();
+		if (!task) {
+			throw new Error("No task available in queue");
+		}
 		this._currentTaskId = task.id;
 
 		try {
@@ -396,7 +406,10 @@ export class DeterministicScheduler implements TaskScheduler {
 
 		// Execute tasks in LIFO order (last spawned = first executed)
 		while (this.taskQueue.length > 0) {
-			const task = this.taskQueue.pop()!; // pop() removes from end (LIFO)
+			const task = this.taskQueue.pop(); // pop() removes from end (LIFO)
+			if (!task) {
+				throw new Error("No task available in queue");
+			}
 			this._currentTaskId = task.id;
 
 			try {
