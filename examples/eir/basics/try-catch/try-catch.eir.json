@@ -1,0 +1,111 @@
+{
+  "$schema": "https://raw.githubusercontent.com/Mearman/cairs/main/eir.schema.json",
+  "version": "1.0.0",
+  "description": "Demonstrates try/catch with fallback for error handling in EIR. Shows both success path (with fallback) and error path (with catch handler).",
+  "airDefs": [
+    {
+      "ns": "core",
+      "name": "add",
+      "params": ["a", "b"],
+      "result": { "kind": "int" },
+      "body": { "kind": "ref", "id": "a" }
+    },
+    {
+      "ns": "core",
+      "name": "mul",
+      "params": ["a", "b"],
+      "result": { "kind": "int" },
+      "body": { "kind": "ref", "id": "a" }
+    },
+    {
+      "ns": "core",
+      "name": "div",
+      "params": ["a", "b"],
+      "result": { "kind": "int" },
+      "body": { "kind": "ref", "id": "a" }
+    }
+  ],
+  "nodes": [
+    {
+      "id": "numerator",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "int" },
+        "value": 10
+      }
+    },
+    {
+      "id": "denominator",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "int" },
+        "value": 2
+      }
+    },
+    {
+      "id": "zero",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "int" },
+        "value": 0
+      }
+    },
+    {
+      "id": "divideOp",
+      "expr": {
+        "kind": "call",
+        "ns": "core",
+        "name": "div",
+        "args": ["numerator", "denominator"]
+      }
+    },
+    {
+      "id": "divideByZero",
+      "expr": {
+        "kind": "call",
+        "ns": "core",
+        "name": "div",
+        "args": ["numerator", "zero"]
+      }
+    },
+    {
+      "id": "resultWithFallback",
+      "expr": {
+        "kind": "try",
+        "tryBody": "divideOp",
+        "catchParam": "err",
+        "catchBody": "handleError",
+        "fallback": "applyFallback"
+      }
+    },
+    {
+      "id": "handleError",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "int" },
+        "value": -1
+      }
+    },
+    {
+      "id": "applyFallback",
+      "expr": {
+        "kind": "call",
+        "ns": "core",
+        "name": "mul",
+        "args": ["numerator", "numerator"]
+      }
+    },
+    {
+      "id": "errorResult",
+      "expr": {
+        "kind": "try",
+        "tryBody": "divideByZero",
+        "catchParam": "err",
+        "catchBody": "handleError"
+      }
+    }
+  ],
+  "result": "resultWithFallback",
+  "expected_result": 100,
+  "note": "The try expression evaluates divideOp (10 / 2 = 5), which succeeds, so fallback applies (10 * 10 = 100). Change result to 'errorResult' to see the error path: 10 / 0 triggers catch, returning -1."
+}

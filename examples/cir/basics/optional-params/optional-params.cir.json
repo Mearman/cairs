@@ -1,0 +1,69 @@
+{
+  "version": "1.0.0",
+  "airDefs": [],
+  "nodes": [
+    {
+      "id": "defaultMultiplier",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "int" },
+        "value": 2
+      }
+    },
+    {
+      "id": "double",
+      "expr": {
+        "kind": "lambda",
+        "params": [
+          { "name": "x", "type": { "kind": "int" } },
+          {
+            "name": "multiplier",
+            "type": { "kind": "int" },
+            "optional": true,
+            "default": {
+              "kind": "ref",
+              "id": "defaultMultiplier"
+            }
+          }
+        ],
+        "body": "doubleBody",
+        "type": {
+          "kind": "fn",
+          "params": [
+            { "kind": "int" },
+            { "kind": "int" }
+          ],
+          "returns": { "kind": "int" }
+        }
+      }
+    },
+    {
+      "id": "doubleBody",
+      "expr": {
+        "kind": "call",
+        "ns": "core",
+        "name": "mul",
+        "args": ["x", "multiplier"]
+      },
+      "type": { "kind": "int" }
+    },
+    {
+      "id": "input",
+      "expr": {
+        "kind": "lit",
+        "type": { "kind": "int" },
+        "value": 5
+      }
+    },
+    {
+      "id": "result",
+      "expr": {
+        "kind": "callExpr",
+        "fn": "double",
+        "args": ["input"]
+      },
+      "type": { "kind": "int" }
+    }
+  ],
+  "result": "result"
+}

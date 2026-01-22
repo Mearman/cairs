@@ -1,0 +1,78 @@
+{
+  "$schema": "../../pir.schema.json",
+  "version": "2.0.0",
+  "capabilities": ["async", "parallel"],
+  "description": "Demonstrates await with timeout/fallback and select with returnIndex",
+  "nodes": [
+    { "id": "input", "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 42 } },
+    { "id": "delay", "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 2000 } },
+    { "id": "shortTimeout", "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 100 } },
+    { "id": "longTimeout", "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 5000 } },
+    { "id": "fallbackValue", "expr": { "kind": "lit", "type": { "kind": "int" }, "value": -1 } },
+
+    {
+      "id": "slowComputation",
+      "expr": { "kind": "call", "ns": "core", "name": "mul", "args": ["input", "input"] }
+    },
+    {
+      "id": "slowFuture",
+      "type": { "kind": "future", "of": { "kind": "int" } },
+      "expr": { "kind": "spawn", "task": "slowComputation" }
+    },
+
+    {
+      "id": "fastComputation",
+      "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 100 } }
+    ,
+    {
+      "id": "fastFuture",
+      "type": { "kind": "future", "of": { "kind": "int" } },
+      "expr": { "kind": "spawn", "task": "fastComputation" }
+    },
+
+    {
+      "id": "awaitWithTimeoutSuccess",
+      "expr": {
+        "kind": "await",
+        "future": "slowFuture",
+        "timeout": "longTimeout",
+        "fallback": "fallbackValue",
+        "returnIndex": true
+      }
+    },
+
+    {
+      "id": "awaitWithTimeoutFail",
+      "expr": {
+        "kind": "await",
+        "future": "slowFuture",
+        "timeout": "shortTimeout",
+        "fallback": "fallbackValue",
+        "returnIndex": true
+      }
+    },
+
+    {
+      "id": "selectFirstAvailable",
+      "expr": {
+        "kind": "select",
+        "futures": ["slowFuture", "fastFuture"],
+        "returnIndex": true
+      }
+    },
+
+    {
+      "id": "selectWithTimeout",
+      "expr": {
+        "kind": "select",
+        "futures": ["slowFuture"],
+        "timeout": "shortTimeout",
+        "fallback": "fallbackValue",
+        "returnIndex": true
+      }
+    }
+  ],
+  "result": "selectFirstAvailable",
+  "expected_result": "selectResult",
+  "note": "The select expression returns {index: 1, value: 100} since fastFuture completes first. Change result to 'awaitWithTimeoutSuccess' (returns {index: 0, value: 1764}) or 'awaitWithTimeoutFail' (returns {index: 1, value: -1} due to timeout)."
+}
