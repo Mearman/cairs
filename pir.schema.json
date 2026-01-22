@@ -154,6 +154,18 @@
         },
         "future": {
           "$ref": "#/$defs/id"
+        },
+        "timeout": {
+          "$ref": "#/$defs/id",
+          "description": "Timeout in milliseconds (node reference to int literal)"
+        },
+        "fallback": {
+          "$ref": "#/$defs/id",
+          "description": "Fallback value on timeout (node reference)"
+        },
+        "returnIndex": {
+          "type": "boolean",
+          "description": "Return success(0)/timeout(1) index instead of value"
         }
       }
     },
@@ -219,7 +231,16 @@
           }
         },
         "timeout": {
-          "$ref": "#/$defs/id"
+          "$ref": "#/$defs/id",
+          "description": "Timeout in milliseconds (node reference to int literal)"
+        },
+        "fallback": {
+          "$ref": "#/$defs/id",
+          "description": "Fallback value on timeout (node reference)"
+        },
+        "returnIndex": {
+          "type": "boolean",
+          "description": "Return which future won (-1=timeout, 0..n-1=winning future)"
         }
       }
     },

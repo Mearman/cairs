@@ -53,6 +53,25 @@
         }
       }
     },
+    "lambdaParam": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/id"
+        },
+        "type": {
+          "$ref": "https://raw.githubusercontent.com/Mearman/cairs/refs/heads/main/air.schema.json#/$defs/type"
+        },
+        "optional": {
+          "type": "boolean"
+        },
+        "default": {
+          "$ref": "#/$defs/exprCir"
+        }
+      }
+    },
     "exprCir": {
       "oneOf": [
         {
@@ -85,6 +104,13 @@
         },
         "returns": {
           "$ref": "https://raw.githubusercontent.com/Mearman/cairs/refs/heads/main/air.schema.json#/$defs/type"
+        },
+        "optionalParams": {
+          "type": "array",
+          "items": {
+            "type": "boolean"
+          },
+          "description": "Track which parameters are optional (same length as params)"
         }
       }
     },
@@ -99,7 +125,14 @@
         "params": {
           "type": "array",
           "items": {
-            "$ref": "#/$defs/param"
+            "oneOf": [
+              {
+                "$ref": "#/$defs/id"
+              },
+              {
+                "$ref": "#/$defs/lambdaParam"
+              }
+            ]
           }
         },
         "body": {

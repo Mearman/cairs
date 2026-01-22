@@ -73,6 +73,9 @@
         },
         {
           "$ref": "#/$defs/expr_refCell"
+        },
+        {
+          "$ref": "#/$defs/expr_try"
         }
       ]
     },
@@ -239,6 +242,28 @@
           "const": "refCell"
         },
         "target": {
+          "$ref": "#/$defs/id"
+        }
+      }
+    },
+    "expr_try": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "tryBody", "catchParam", "catchBody"],
+      "properties": {
+        "kind": {
+          "const": "try"
+        },
+        "tryBody": {
+          "$ref": "#/$defs/id"
+        },
+        "catchParam": {
+          "$ref": "#/$defs/id"
+        },
+        "catchBody": {
+          "$ref": "#/$defs/id"
+        },
+        "fallback": {
           "$ref": "#/$defs/id"
         }
       }
