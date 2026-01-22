@@ -1,0 +1,180 @@
+{
+  "$schema": "https://raw.githubusercontent.com/Mearman/cairs/main/eir.schema.json",
+  "version": "1.0.0",
+  "description": "Interactive example: reads 3 integers, computes sum and average, then prints both results. Demonstrates sequential I/O effects with arithmetic computation.",
+  "airDefs": [],
+  "nodes": [
+    {
+      "id": "readNum1",
+      "expr": {
+        "kind": "effect",
+        "op": "readInt",
+        "args": []
+      }
+    },
+    {
+      "id": "readNum2",
+      "expr": {
+        "kind": "effect",
+        "op": "readInt",
+        "args": []
+      }
+    },
+    {
+      "id": "readNum3",
+      "expr": {
+        "kind": "effect",
+        "op": "readInt",
+        "args": []
+      }
+    },
+    {
+      "id": "sum12",
+      "expr": {
+        "kind": "call",
+        "ns": "core",
+        "name": "add",
+        "args": ["readNum1", "readNum2"]
+      }
+    },
+    {
+      "id": "sum123",
+      "expr": {
+        "kind": "call",
+        "ns": "core",
+        "name": "add",
+        "args": ["sum12", "readNum3"]
+      }
+    },
+    {
+      "id": "three",
+      "expr": {
+        "kind": "lit",
+        "type": {"kind": "int"},
+        "value": 3
+      }
+    },
+    {
+      "id": "average",
+      "expr": {
+        "kind": "call",
+        "ns": "core",
+        "name": "div",
+        "args": ["sum123", "three"]
+      }
+    },
+    {
+      "id": "sumLabel",
+      "expr": {
+        "kind": "lit",
+        "type": {"kind": "string"},
+        "value": "Sum: "
+      }
+    },
+    {
+      "id": "effectPrintSumLabel",
+      "expr": {
+        "kind": "effect",
+        "op": "print",
+        "args": ["sumLabel"]
+      }
+    },
+    {
+      "id": "sumRefNode",
+      "expr": {
+        "kind": "ref",
+        "id": "sum123"
+      }
+    },
+    {
+      "id": "printSum",
+      "expr": {
+        "kind": "seq",
+        "first": "effectPrintSumLabel",
+        "then": "effectPrintSumValue"
+      }
+    },
+    {
+      "id": "effectPrintSumValue",
+      "expr": {
+        "kind": "effect",
+        "op": "print",
+        "args": ["sumRefNode"]
+      }
+    },
+    {
+      "id": "newline1",
+      "expr": {
+        "kind": "lit",
+        "type": {"kind": "string"},
+        "value": "\n"
+      }
+    },
+    {
+      "id": "effectPrintNewline1",
+      "expr": {
+        "kind": "effect",
+        "op": "print",
+        "args": ["newline1"]
+      }
+    },
+    {
+      "id": "printSumWithNewline",
+      "expr": {
+        "kind": "seq",
+        "first": "printSum",
+        "then": "effectPrintNewline1"
+      }
+    },
+    {
+      "id": "avgLabel",
+      "expr": {
+        "kind": "lit",
+        "type": {"kind": "string"},
+        "value": "Average: "
+      }
+    },
+    {
+      "id": "effectPrintAvgLabel",
+      "expr": {
+        "kind": "effect",
+        "op": "print",
+        "args": ["avgLabel"]
+      }
+    },
+    {
+      "id": "printAvg",
+      "expr": {
+        "kind": "seq",
+        "first": "printSumWithNewline",
+        "then": "effectPrintAvgLabel"
+      }
+    },
+    {
+      "id": "avgRefNode",
+      "expr": {
+        "kind": "ref",
+        "id": "average"
+      }
+    },
+    {
+      "id": "effectPrintAvgValue",
+      "expr": {
+        "kind": "effect",
+        "op": "print",
+        "args": ["avgRefNode"]
+      }
+    },
+    {
+      "id": "result",
+      "expr": {
+        "kind": "seq",
+        "first": "printAvg",
+        "then": "effectPrintAvgValue"
+      }
+    }
+  ],
+  "result": "result",
+  "expected_result": null,
+  "note": "Stats calculator: reads 3 integers, computes sum (60) and average (20), then prints both results."
+}

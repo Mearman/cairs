@@ -1,0 +1,132 @@
+{
+  "$schema": "https://raw.githubusercontent.com/Mearman/cairs/main/lir.schema.json",
+  "version": "1.0.0",
+  "description": "LIR representation of stats calculator: single block computing sum and average from literal values. Demonstrates effect and arithmetic instructions in CFG form.",
+  "blocks": [
+    {
+      "id": "entry",
+      "instructions": [
+        {
+          "kind": "assign",
+          "target": "n1",
+          "value": {
+            "kind": "lit",
+            "type": {"kind": "int"},
+            "value": 10
+          }
+        },
+        {
+          "kind": "assign",
+          "target": "n2",
+          "value": {
+            "kind": "lit",
+            "type": {"kind": "int"},
+            "value": 20
+          }
+        },
+        {
+          "kind": "assign",
+          "target": "n3",
+          "value": {
+            "kind": "lit",
+            "type": {"kind": "int"},
+            "value": 30
+          }
+        },
+        {
+          "kind": "op",
+          "target": "sum12",
+          "ns": "core",
+          "name": "add",
+          "args": ["n1", "n2"]
+        },
+        {
+          "kind": "op",
+          "target": "sum",
+          "ns": "core",
+          "name": "add",
+          "args": ["sum12", "n3"]
+        },
+        {
+          "kind": "assign",
+          "target": "three",
+          "value": {
+            "kind": "lit",
+            "type": {"kind": "int"},
+            "value": 3
+          }
+        },
+        {
+          "kind": "op",
+          "target": "average",
+          "ns": "core",
+          "name": "div",
+          "args": ["sum", "three"]
+        },
+        {
+          "kind": "assign",
+          "target": "sumLabel",
+          "value": {
+            "kind": "lit",
+            "type": {"kind": "string"},
+            "value": "Sum: "
+          }
+        },
+        {
+          "kind": "effect",
+          "target": "print1",
+          "op": "print",
+          "args": ["sumLabel"]
+        },
+        {
+          "kind": "effect",
+          "target": "print2",
+          "op": "print",
+          "args": ["sum"]
+        },
+        {
+          "kind": "assign",
+          "target": "newline",
+          "value": {
+            "kind": "lit",
+            "type": {"kind": "string"},
+            "value": "\n"
+          }
+        },
+        {
+          "kind": "effect",
+          "target": "print3",
+          "op": "print",
+          "args": ["newline"]
+        },
+        {
+          "kind": "assign",
+          "target": "avgLabel",
+          "value": {
+            "kind": "lit",
+            "type": {"kind": "string"},
+            "value": "Average: "
+          }
+        },
+        {
+          "kind": "effect",
+          "target": "print4",
+          "op": "print",
+          "args": ["avgLabel"]
+        },
+        {
+          "kind": "effect",
+          "target": "print5",
+          "op": "print",
+          "args": ["average"]
+        }
+      ],
+      "terminator": {
+        "kind": "return"
+      }
+    }
+  ],
+  "entry": "entry",
+  "expected_result": null,
+  "note": "Stats calculator CFG: single block computes sum (60) and average (20) from literal inputs, then prints both results."
+}
