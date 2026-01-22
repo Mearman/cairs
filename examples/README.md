@@ -58,6 +58,7 @@ pnpm run-example lir/control-flow/if-else
 | `--list` | List all available examples |
 | `--verbose` | Show detailed evaluation output |
 | `--validate` | Only validate, don't evaluate |
+| `--synth` | Generate Python code instead of evaluating |
 | `--inputs <values>` | Provide comma-separated or JSON inputs for interactive examples |
 | `--inputs-file <path>` | Read inputs from a JSON file |
 | `--help` | Show help message |
@@ -83,6 +84,34 @@ pnpm run-example eir/interactive/add-two-ints --inputs-file ./inputs.json
 **Input precedence:** `--inputs` flag > `--inputs-file` flag > `.inputs.json` fixture > interactive prompt (TTY only)
 
 Fixture files (e.g., `add-two-ints.inputs.json`) enable deterministic testing of interactive examples.
+
+### Python Code Generation
+
+The `--synth` flag generates executable Python code from CAIRS documents:
+
+```bash
+# Generate Python from AIR example
+pnpm run-example air/basics/arithmetic --synth
+
+# Generate Python from CIR example
+pnpm run-example cir/algorithms/factorial --synth
+
+# Generate Python from EIR example
+pnpm run-example eir/loops/while-loop --synth
+
+# Generate Python from LIR example
+pnpm run-example lir/control-flow/while-cfg --synth
+```
+
+The generated Python code mirrors the structure of the original CAIRS document:
+- AIR/CIR/EIR: Nodes become variable bindings (`v_nodeId`), operators are mapped to Python equivalents
+- LIR: Blocks are emitted as a Python dict with an execution engine that interprets the CFG
+
+You can pipe the output directly to Python:
+
+```bash
+pnpm run-example air/basics/arithmetic --synth | python3
+```
 
 ## Test Runner
 
