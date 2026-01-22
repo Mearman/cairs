@@ -4,8 +4,8 @@
 import { describe, it } from "node:test";
 import assert from "node:assert";
 import { lowerEIRtoLIR } from "../src/lir/lower.js";
-import type { EIRDocument } from "../src/types.js";
-import { intType } from "../src/types.js";
+import type { EIRDocument, LirBlock } from "../src/types.js";
+import { intType, isBlockNode } from "../src/types.js";
 
 // Helper to create minimal EIRDocument
 function makeEIR(nodes: EIRDocument["nodes"], result: string, capabilities?: string[]): EIRDocument {
@@ -19,6 +19,24 @@ function makeEIR(nodes: EIRDocument["nodes"], result: string, capabilities?: str
 		doc.capabilities = capabilities;
 	}
 	return doc;
+}
+
+// Helper to extract blocks from lowered LIR
+function getBlocks(lir: ReturnType<typeof lowerEIRtoLIR>): LirBlock[] {
+	const node = lir.nodes.find((n) => n.id === lir.result);
+	if (node && isBlockNode(node)) {
+		return node.blocks;
+	}
+	return [];
+}
+
+// Helper to get entry from lowered LIR
+function getEntry(lir: ReturnType<typeof lowerEIRtoLIR>): string | undefined {
+	const node = lir.nodes.find((n) => n.id === lir.result);
+	if (node && isBlockNode(node)) {
+		return node.entry;
+	}
+	return undefined;
 }
 
 describe("lowerEIRtoLIR", () => {
@@ -35,10 +53,11 @@ describe("lowerEIRtoLIR", () => {
 			);
 
 			const lir = lowerEIRtoLIR(eir);
+			const blocks = getBlocks(lir);
 
 			assert.strictEqual(lir.version, "0.1.0");
-			assert.ok(lir.blocks.length > 0);
-			assert.ok(lir.entry);
+			assert.ok(blocks.length > 0);
+			assert.ok(getEntry(lir));
 		});
 
 		it("should lower a variable expression", () => {
@@ -53,8 +72,9 @@ describe("lowerEIRtoLIR", () => {
 			);
 
 			const lir = lowerEIRtoLIR(eir);
+			const blocks = getBlocks(lir);
 
-			assert.ok(lir.blocks.length > 0);
+			assert.ok(blocks.length > 0);
 		});
 
 		it("should lower an operator call", () => {
@@ -69,9 +89,10 @@ describe("lowerEIRtoLIR", () => {
 			);
 
 			const lir = lowerEIRtoLIR(eir);
+			const blocks = getBlocks(lir);
 
 			// Should have at least one block with an op instruction
-			const hasOp = lir.blocks.some((b) =>
+			const hasOp = blocks.some((b) =>
 				b.instructions.some((i) => i.kind === "op"),
 			);
 			assert.ok(hasOp);
@@ -103,9 +124,10 @@ describe("lowerEIRtoLIR", () => {
 			);
 
 			const lir = lowerEIRtoLIR(eir);
+			const blocks = getBlocks(lir);
 
 			// Should have branch terminator
-			const hasBranch = lir.blocks.some(
+			const hasBranch = blocks.some(
 				(b) => b.terminator?.kind === "branch",
 			);
 			assert.ok(hasBranch);
@@ -131,15 +153,16 @@ describe("lowerEIRtoLIR", () => {
 			);
 
 			const lir = lowerEIRtoLIR(eir);
+			const blocks = getBlocks(lir);
 
 			// Should have branch terminator (for loop condition)
-			const hasBranch = lir.blocks.some(
+			const hasBranch = blocks.some(
 				(b) => b.terminator?.kind === "branch",
 			);
 			assert.ok(hasBranch);
 
 			// Should have jump back to header (for loop continuation)
-			const hasJump = lir.blocks.some(
+			const hasJump = blocks.some(
 				(b) => b.terminator?.kind === "jump",
 			);
 			assert.ok(hasJump);
@@ -180,9 +203,10 @@ describe("lowerEIRtoLIR", () => {
 			);
 
 			const lir = lowerEIRtoLIR(eir);
+			const blocks = getBlocks(lir);
 
 			// Should have multiple blocks for init, header, body, update, exit
-			assert.ok(lir.blocks.length >= 3);
+			assert.ok(blocks.length >= 3);
 		});
 	});
 
@@ -207,8 +231,9 @@ describe("lowerEIRtoLIR", () => {
 			);
 
 			const lir = lowerEIRtoLIR(eir);
+			const blocks = getBlocks(lir);
 
-			assert.ok(lir.blocks.length > 0);
+			assert.ok(blocks.length > 0);
 		});
 	});
 
@@ -229,9 +254,10 @@ describe("lowerEIRtoLIR", () => {
 			);
 
 			const lir = lowerEIRtoLIR(eir);
+			const blocks = getBlocks(lir);
 
 			// Should have assign instruction
-			const hasAssign = lir.blocks.some((b) =>
+			const hasAssign = blocks.some((b) =>
 				b.instructions.some((i) => i.kind === "assign"),
 			);
 			assert.ok(hasAssign);
@@ -255,9 +281,10 @@ describe("lowerEIRtoLIR", () => {
 			);
 
 			const lir = lowerEIRtoLIR(eir);
+			const blocks = getBlocks(lir);
 
 			// Should have effect instruction
-			const hasEffect = lir.blocks.some((b) =>
+			const hasEffect = blocks.some((b) =>
 				b.instructions.some((i) => i.kind === "effect"),
 			);
 			assert.ok(hasEffect);
@@ -331,8 +358,9 @@ describe("lowerEIRtoLIR", () => {
 			);
 
 			const lir = lowerEIRtoLIR(eir);
+			const blocks = getBlocks(lir);
 
-			assert.ok(lir.blocks.length > 0);
+			assert.ok(blocks.length > 0);
 		});
 	});
 
@@ -353,9 +381,10 @@ describe("lowerEIRtoLIR", () => {
 			);
 
 			const lir = lowerEIRtoLIR(eir);
+			const blocks = getBlocks(lir);
 
 			// Should have assign instruction for the ref
-			const hasAssign = lir.blocks.some((b) =>
+			const hasAssign = blocks.some((b) =>
 				b.instructions.some((i) => i.kind === "assign"),
 			);
 			assert.ok(hasAssign);

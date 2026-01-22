@@ -348,20 +348,26 @@ describe("synthesizePython", () => {
 		it("should synthesize CFG with blocks", () => {
 			const doc: LIRDocument = {
 				version: "1.0.0",
-				blocks: [
+				nodes: [
 					{
-						id: "entry",
-						instructions: [
+						id: "main",
+						blocks: [
 							{
-								kind: "assign",
-								target: "x",
-								value: { kind: "lit", type: { kind: "int" }, value: 5 },
+								id: "entry",
+								instructions: [
+									{
+										kind: "assign",
+										target: "x",
+										value: { kind: "lit", type: { kind: "int" }, value: 5 },
+									},
+								],
+								terminator: { kind: "return", value: "x" },
 							},
 						],
-						terminator: { kind: "return", value: "x" },
+						entry: "entry",
 					},
 				],
-				entry: "entry",
+				result: "main",
 			};
 
 			const python = synthesizePython(doc);
@@ -376,35 +382,41 @@ describe("synthesizePython", () => {
 		it("should synthesize branch terminators", () => {
 			const doc: LIRDocument = {
 				version: "1.0.0",
-				blocks: [
+				nodes: [
 					{
-						id: "header",
-						instructions: [
+						id: "main",
+						blocks: [
 							{
-								kind: "assign",
-								target: "cond",
-								value: { kind: "lit", type: { kind: "bool" }, value: true },
+								id: "header",
+								instructions: [
+									{
+										kind: "assign",
+										target: "cond",
+										value: { kind: "lit", type: { kind: "bool" }, value: true },
+									},
+								],
+								terminator: {
+									kind: "branch",
+									cond: "cond",
+									then: "thenBlock",
+									else: "elseBlock",
+								},
+							},
+							{
+								id: "thenBlock",
+								instructions: [],
+								terminator: { kind: "return" },
+							},
+							{
+								id: "elseBlock",
+								instructions: [],
+								terminator: { kind: "return" },
 							},
 						],
-						terminator: {
-							kind: "branch",
-							cond: "cond",
-							then: "thenBlock",
-							else: "elseBlock",
-						},
-					},
-					{
-						id: "thenBlock",
-						instructions: [],
-						terminator: { kind: "return" },
-					},
-					{
-						id: "elseBlock",
-						instructions: [],
-						terminator: { kind: "return" },
+						entry: "header",
 					},
 				],
-				entry: "header",
+				result: "main",
 			};
 
 			const python = synthesizePython(doc);
@@ -417,23 +429,29 @@ describe("synthesizePython", () => {
 		it("should synthesize phi nodes", () => {
 			const doc: LIRDocument = {
 				version: "1.0.0",
-				blocks: [
+				nodes: [
 					{
-						id: "merge",
-						instructions: [
+						id: "main",
+						blocks: [
 							{
-								kind: "phi",
-								target: "x",
-								sources: [
-									{ block: "pred1", id: "x1" },
-									{ block: "pred2", id: "x2" },
+								id: "merge",
+								instructions: [
+									{
+										kind: "phi",
+										target: "x",
+										sources: [
+											{ block: "pred1", id: "x1" },
+											{ block: "pred2", id: "x2" },
+										],
+									},
 								],
+								terminator: { kind: "return", value: "x" },
 							},
 						],
-						terminator: { kind: "return", value: "x" },
+						entry: "merge",
 					},
 				],
-				entry: "merge",
+				result: "main",
 			};
 
 			const python = synthesizePython(doc);
