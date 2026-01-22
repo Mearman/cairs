@@ -185,8 +185,10 @@ export class AsyncChannelImpl implements AsyncChannel {
 
 		// If there's a waiting receiver, deliver directly
 		if (this.waitingReceivers.length > 0) {
-			const receiver = this.waitingReceivers.shift()!;
-			receiver.resolve(value);
+			const receiver = this.waitingReceivers.shift();
+			if (receiver) {
+				receiver.resolve(value);
+			}
 			return;
 		}
 
@@ -221,8 +223,10 @@ export class AsyncChannelImpl implements AsyncChannel {
 
 		// If there's a waiting receiver, deliver directly
 		if (this.waitingReceivers.length > 0) {
-			const receiver = this.waitingReceivers.shift()!;
-			receiver.resolve(value);
+			const receiver = this.waitingReceivers.shift();
+			if (receiver) {
+				receiver.resolve(value);
+			}
 			return true;
 		}
 
@@ -243,12 +247,17 @@ export class AsyncChannelImpl implements AsyncChannel {
 	async recv(): Promise<Value> {
 		// If buffer has value, return immediately
 		if (this.buffer.length > 0) {
-			const value = this.buffer.shift()!;
+			const value = this.buffer.shift();
+			if (!value) {
+				throw new Error("Buffer unexpectedly empty");
+			}
 
 			// Wake up a waiting sender if any
 			if (this.waitingSenders.length > 0) {
-				const sender = this.waitingSenders.shift()!;
-				sender.resolve();
+				const sender = this.waitingSenders.shift();
+				if (sender) {
+					sender.resolve();
+				}
 			}
 
 			return value;
@@ -261,7 +270,10 @@ export class AsyncChannelImpl implements AsyncChannel {
 
 		// If there's a waiting sender (rendezvous for unbuffered channels), complete the handshake
 		if (this.waitingSenders.length > 0) {
-			const sender = this.waitingSenders.shift()!;
+			const sender = this.waitingSenders.shift();
+			if (!sender) {
+				throw new Error("Sender unexpectedly missing");
+			}
 			// Resolve the sender's promise (so send() completes)
 			sender.resolve();
 			// Return the value the sender was trying to send
@@ -281,12 +293,17 @@ export class AsyncChannelImpl implements AsyncChannel {
 	tryRecv(): Value | null {
 		// If buffer has value, return immediately
 		if (this.buffer.length > 0) {
-			const value = this.buffer.shift()!;
+			const value = this.buffer.shift();
+			if (!value) {
+				throw new Error("Buffer unexpectedly empty");
+			}
 
 			// Wake up a waiting sender if any
 			if (this.waitingSenders.length > 0) {
-				const sender = this.waitingSenders.shift()!;
-				sender.resolve();
+				const sender = this.waitingSenders.shift();
+				if (sender) {
+					sender.resolve();
+				}
 			}
 
 			return value;

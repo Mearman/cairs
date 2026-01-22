@@ -409,7 +409,7 @@ describe("ConcurrentEffectLog", () => {
 		assert.equal(effects.length, 1);
 		assert.equal(effects[0]?.op, "add");
 		assert.equal(effects[0]?.result?.kind, "int");
-		assert.equal((effects[0]?.result as { kind: "int"; value: number })?.value, 3);
+		assert.equal((effects[0]?.result as { kind: "int"; value: number }).value, 3);
 	});
 
 	it("should append effects with errors", () => {
@@ -606,7 +606,10 @@ describe("AsyncChannelStore", () => {
 		const store = createAsyncChannelStore();
 
 		const id = store.create(5);
-		const channel = store.get(id)!;
+		const channel = store.get(id);
+		if (!channel) {
+			throw new Error("Channel not found");
+		}
 
 		await channel.send(intVal(42));
 
@@ -629,7 +632,8 @@ describe("AsyncChannelStore", () => {
 
 		assert.equal(store.size(), 3);
 
-		store.delete(store.get("ch_0")! ? "ch_0" : "some_id");
+		const ch0 = store.get("ch_0");
+		store.delete(ch0 ? "ch_0" : "some_id");
 
 		assert.equal(store.size(), 2);
 	});
@@ -651,7 +655,10 @@ describe("AsyncChannelStore", () => {
 		const store = createAsyncChannelStore();
 
 		const id = store.create(5);
-		const channel = store.get(id)!;
+		const channel = store.get(id);
+		if (!channel) {
+			throw new Error("Channel not found");
+		}
 
 		await channel.send(intVal(42));
 
@@ -677,7 +684,7 @@ describe("Integration: Channel with multiple producers/consumers", () => {
 		// Consumer
 		const consumer = async () => {
 			try {
-				while (true) {
+				for (;;) {
 					const value = await channel.recv();
 					results.push((value as { kind: "int"; value: number }).value);
 				}
@@ -707,7 +714,7 @@ describe("Integration: Channel with multiple producers/consumers", () => {
 		// Consumers
 		const consumer1 = async () => {
 			try {
-				while (true) {
+				for (;;) {
 					const value = await channel.recv();
 					results1.push((value as { kind: "int"; value: number }).value);
 				}
@@ -718,7 +725,7 @@ describe("Integration: Channel with multiple producers/consumers", () => {
 
 		const consumer2 = async () => {
 			try {
-				while (true) {
+				for (;;) {
 					const value = await channel.recv();
 					results2.push((value as { kind: "int"; value: number }).value);
 				}
