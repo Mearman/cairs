@@ -147,4 +147,36 @@ describe("parseArgs Argument Parsing", () => {
 			assert.strictEqual(result.options.inputsFile, "./test-fixtures/inputs.json");
 		});
 	});
+
+	describe("Python Synthesis Flag", () => {
+		it("should parse --synth flag", () => {
+			const result = parseArgs(["air/basics/arithmetic", "--synth"]);
+
+			assert.strictEqual(result.path, "air/basics/arithmetic");
+			assert.strictEqual(result.options.synth, true);
+		});
+
+		it("should combine --synth with other flags", () => {
+			const result = parseArgs(["cir/algorithms/factorial", "--synth", "--verbose"]);
+
+			assert.strictEqual(result.path, "cir/algorithms/factorial");
+			assert.strictEqual(result.options.synth, true);
+			assert.strictEqual(result.options.verbose, true);
+		});
+
+		it("should handle --synth with --validate (synthesis only)", () => {
+			const result = parseArgs(["eir/loops/while-loop", "--synth", "--validate"]);
+
+			assert.strictEqual(result.path, "eir/loops/while-loop");
+			assert.strictEqual(result.options.synth, true);
+			assert.strictEqual(result.options.validate, true);
+		});
+
+		it("should handle LIR examples with --synth", () => {
+			const result = parseArgs(["lir/control-flow/while-cfg", "--synth"]);
+
+			assert.strictEqual(result.path, "lir/control-flow/while-cfg");
+			assert.strictEqual(result.options.synth, true);
+		});
+	});
 });
