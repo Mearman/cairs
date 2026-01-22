@@ -344,3 +344,360 @@ describe("Boolean Operators", () => {
 		assert.deepStrictEqual(result, boolVal(false));
 	});
 });
+
+describe("CIR Features", () => {
+	const registry = new Map();
+	const coreReg = createCoreRegistry();
+	for (const [key, op] of coreReg) {
+		registry.set(key, op);
+	}
+	const defs = emptyDefs();
+
+	it("should evaluate lambda and callExpr", () => {
+		// identity function: lambda x => x
+		const doc = {
+			version: "1.0.0",
+			airDefs: [],
+			nodes: [
+				{ id: "body", expr: { kind: "var", name: "x" } },
+				{
+					id: "fn",
+					expr: {
+						kind: "lambda",
+						params: ["x"],
+						body: "body",
+						type: { kind: "fn", params: [{ kind: "int" }], returns: { kind: "int" } },
+					},
+				},
+				{ id: "arg", expr: { kind: "lit", type: { kind: "int" }, value: 42 } },
+				{ id: "result", expr: { kind: "callExpr", fn: "fn", args: ["arg"] } },
+			],
+			result: "result",
+		};
+		const result = evaluateProgram(createTestDocument(doc), registry, defs);
+		assert.deepStrictEqual(result, intVal(42));
+	});
+
+	it("should evaluate simple let binding with var reference", () => {
+		// let x = 42 in x (simple let with variable body)
+		const doc = {
+			version: "1.0.0",
+			airDefs: [],
+			nodes: [
+				{
+					id: "value",
+					expr: { kind: "lit", type: { kind: "int" }, value: 42 },
+				},
+				{ id: "body", expr: { kind: "var", name: "x" } },
+				{
+					id: "result",
+					expr: { kind: "let", name: "x", value: "value", body: "body" },
+				},
+			],
+			result: "result",
+		};
+		const result = evaluateProgram(createTestDocument(doc), registry, defs);
+		assert.deepStrictEqual(result, intVal(42));
+	});
+
+	it("should evaluate let with literal body", () => {
+		// let x = 10 in 42 (where body doesn't use x)
+		const doc = {
+			version: "1.0.0",
+			airDefs: [],
+			nodes: [
+				{ id: "val", expr: { kind: "lit", type: { kind: "int" }, value: 10 } },
+				{ id: "body", expr: { kind: "lit", type: { kind: "int" }, value: 42 } },
+				{
+					id: "result",
+					expr: { kind: "let", name: "x", value: "val", body: "body" },
+				},
+			],
+			result: "result",
+		};
+		const result = evaluateProgram(createTestDocument(doc), registry, defs);
+		assert.deepStrictEqual(result, intVal(42));
+	});
+
+	it("should evaluate if-then-else with computed condition", () => {
+		// if 5 < 10 then 42 else 0
+		const doc = {
+			version: "1.0.0",
+			airDefs: [],
+			nodes: [
+				{ id: "a", expr: { kind: "lit", type: { kind: "int" }, value: 5 } },
+				{ id: "b", expr: { kind: "lit", type: { kind: "int" }, value: 10 } },
+				{
+					id: "cond",
+					expr: { kind: "call", ns: "core", name: "lt", args: ["a", "b"] },
+				},
+				{ id: "then", expr: { kind: "lit", type: { kind: "int" }, value: 42 } },
+				{ id: "else", expr: { kind: "lit", type: { kind: "int" }, value: 0 } },
+				{
+					id: "result",
+					expr: { kind: "if", cond: "cond", then: "then", else: "else", type: { kind: "int" } },
+				},
+			],
+			result: "result",
+		};
+		const result = evaluateProgram(createTestDocument(doc), registry, defs);
+		assert.deepStrictEqual(result, intVal(42));
+	});
+
+	it("should evaluate modulo operation", () => {
+		const doc = {
+			version: "1.0.0",
+			airDefs: [],
+			nodes: [
+				{ id: "a", expr: { kind: "lit", type: { kind: "int" }, value: 47 } },
+				{ id: "b", expr: { kind: "lit", type: { kind: "int" }, value: 5 } },
+				{
+					id: "result",
+					expr: { kind: "call", ns: "core", name: "mod", args: ["a", "b"] },
+				},
+			],
+			result: "result",
+		};
+		const result = evaluateProgram(createTestDocument(doc), registry, defs);
+		assert.deepStrictEqual(result, intVal(2));
+	});
+
+	it("should evaluate power operation", () => {
+		const doc = {
+			version: "1.0.0",
+			airDefs: [],
+			nodes: [
+				{ id: "base", expr: { kind: "lit", type: { kind: "int" }, value: 2 } },
+				{ id: "exp", expr: { kind: "lit", type: { kind: "int" }, value: 10 } },
+				{
+					id: "result",
+					expr: { kind: "call", ns: "core", name: "pow", args: ["base", "exp"] },
+				},
+			],
+			result: "result",
+		};
+		const result = evaluateProgram(createTestDocument(doc), registry, defs);
+		assert.deepStrictEqual(result, intVal(1024));
+	});
+
+	it("should evaluate negation", () => {
+		const doc = {
+			version: "1.0.0",
+			airDefs: [],
+			nodes: [
+				{ id: "n", expr: { kind: "lit", type: { kind: "int" }, value: 42 } },
+				{
+					id: "result",
+					expr: { kind: "call", ns: "core", name: "neg", args: ["n"] },
+				},
+			],
+			result: "result",
+		};
+		const result = evaluateProgram(createTestDocument(doc), registry, defs);
+		assert.deepStrictEqual(result, intVal(-42));
+	});
+});
+
+describe("Literal Types", () => {
+	const registry = createCoreRegistry();
+	const defs = emptyDefs();
+
+	it("should evaluate string literal", () => {
+		const doc = {
+			version: "1.0.0",
+			airDefs: [],
+			nodes: [
+				{
+					id: "result",
+					expr: { kind: "lit", type: { kind: "string" }, value: "hello" },
+				},
+			],
+			result: "result",
+		};
+		const result = evaluateProgram(createTestDocument(doc), registry, defs);
+		assert.strictEqual(result.kind, "string");
+		if (result.kind === "string") {
+			assert.strictEqual(result.value, "hello");
+		}
+	});
+
+	it("should evaluate float literal", () => {
+		const doc = {
+			version: "1.0.0",
+			airDefs: [],
+			nodes: [
+				{
+					id: "result",
+					expr: { kind: "lit", type: { kind: "float" }, value: 3.14 },
+				},
+			],
+			result: "result",
+		};
+		const result = evaluateProgram(createTestDocument(doc), registry, defs);
+		assert.strictEqual(result.kind, "float");
+		if (result.kind === "float") {
+			assert.strictEqual(result.value, 3.14);
+		}
+	});
+
+	it("should evaluate void literal", () => {
+		const doc = {
+			version: "1.0.0",
+			airDefs: [],
+			nodes: [
+				{
+					id: "result",
+					expr: { kind: "lit", type: { kind: "void" }, value: null },
+				},
+			],
+			result: "result",
+		};
+		const result = evaluateProgram(createTestDocument(doc), registry, defs);
+		assert.strictEqual(result.kind, "void");
+	});
+
+	it("should evaluate list literal", () => {
+		const doc = {
+			version: "1.0.0",
+			airDefs: [],
+			nodes: [
+				{
+					id: "result",
+					expr: {
+						kind: "lit",
+						type: { kind: "list", of: { kind: "int" } },
+						value: [1, 2, 3],
+					},
+				},
+			],
+			result: "result",
+		};
+		const result = evaluateProgram(createTestDocument(doc), registry, defs);
+		assert.strictEqual(result.kind, "list");
+		if (result.kind === "list") {
+			assert.strictEqual(result.value.length, 3);
+		}
+	});
+});
+
+describe("Complex Expressions", () => {
+	const registry = new Map();
+	const coreReg = createCoreRegistry();
+	for (const [key, op] of coreReg) {
+		registry.set(key, op);
+	}
+	const defs = emptyDefs();
+
+	it("should evaluate chain of operations", () => {
+		// (10 + 20) * 2 - 18 = 42
+		const doc = {
+			version: "1.0.0",
+			airDefs: [],
+			nodes: [
+				{ id: "a", expr: { kind: "lit", type: { kind: "int" }, value: 10 } },
+				{ id: "b", expr: { kind: "lit", type: { kind: "int" }, value: 20 } },
+				{ id: "c", expr: { kind: "lit", type: { kind: "int" }, value: 2 } },
+				{ id: "d", expr: { kind: "lit", type: { kind: "int" }, value: 18 } },
+				{
+					id: "sum",
+					expr: { kind: "call", ns: "core", name: "add", args: ["a", "b"] },
+				},
+				{
+					id: "product",
+					expr: { kind: "call", ns: "core", name: "mul", args: ["sum", "c"] },
+				},
+				{
+					id: "result",
+					expr: { kind: "call", ns: "core", name: "sub", args: ["product", "d"] },
+				},
+			],
+			result: "result",
+		};
+		const result = evaluateProgram(createTestDocument(doc), registry, defs);
+		assert.deepStrictEqual(result, intVal(42));
+	});
+
+	it("should evaluate conditional with computed branches", () => {
+		// if 5 < 10 then 30 + 12 else 0
+		const doc = {
+			version: "1.0.0",
+			airDefs: [],
+			nodes: [
+				{ id: "five", expr: { kind: "lit", type: { kind: "int" }, value: 5 } },
+				{ id: "ten", expr: { kind: "lit", type: { kind: "int" }, value: 10 } },
+				{ id: "thirty", expr: { kind: "lit", type: { kind: "int" }, value: 30 } },
+				{ id: "twelve", expr: { kind: "lit", type: { kind: "int" }, value: 12 } },
+				{
+					id: "cond",
+					expr: { kind: "call", ns: "core", name: "lt", args: ["five", "ten"] },
+				},
+				{
+					id: "thenBranch",
+					expr: { kind: "call", ns: "core", name: "add", args: ["thirty", "twelve"] },
+				},
+				{ id: "elseBranch", expr: { kind: "lit", type: { kind: "int" }, value: 0 } },
+				{
+					id: "result",
+					expr: { kind: "if", cond: "cond", then: "thenBranch", else: "elseBranch", type: { kind: "int" } },
+				},
+			],
+			result: "result",
+		};
+		const result = evaluateProgram(createTestDocument(doc), registry, defs);
+		assert.deepStrictEqual(result, intVal(42));
+	});
+
+	it("should handle ref expressions", () => {
+		const doc = {
+			version: "1.0.0",
+			airDefs: [],
+			nodes: [
+				{ id: "x", expr: { kind: "lit", type: { kind: "int" }, value: 42 } },
+				{ id: "result", expr: { kind: "ref", id: "x" } },
+			],
+			result: "result",
+		};
+		const result = evaluateProgram(createTestDocument(doc), registry, defs);
+		assert.deepStrictEqual(result, intVal(42));
+	});
+
+	it("should evaluate comparison operators", () => {
+		const doc = {
+			version: "1.0.0",
+			airDefs: [],
+			nodes: [
+				{ id: "a", expr: { kind: "lit", type: { kind: "int" }, value: 10 } },
+				{ id: "b", expr: { kind: "lit", type: { kind: "int" }, value: 10 } },
+				{
+					id: "eq",
+					expr: { kind: "call", ns: "core", name: "eq", args: ["a", "b"] },
+				},
+				{
+					id: "neq",
+					expr: { kind: "call", ns: "core", name: "neq", args: ["a", "b"] },
+				},
+				{
+					id: "lte",
+					expr: { kind: "call", ns: "core", name: "lte", args: ["a", "b"] },
+				},
+				{
+					id: "gte",
+					expr: { kind: "call", ns: "core", name: "gte", args: ["a", "b"] },
+				},
+			],
+			result: "eq",
+		};
+
+		const resultEq = evaluateProgram(createTestDocument(doc), registry, defs);
+		assert.deepStrictEqual(resultEq, boolVal(true));
+
+		const resultNeq = evaluateProgram(createTestDocument({ ...doc, result: "neq" }), registry, defs);
+		assert.deepStrictEqual(resultNeq, boolVal(false));
+
+		const resultLte = evaluateProgram(createTestDocument({ ...doc, result: "lte" }), registry, defs);
+		assert.deepStrictEqual(resultLte, boolVal(true));
+
+		const resultGte = evaluateProgram(createTestDocument({ ...doc, result: "gte" }), registry, defs);
+		assert.deepStrictEqual(resultGte, boolVal(true));
+	});
+});
