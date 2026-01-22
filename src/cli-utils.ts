@@ -19,6 +19,7 @@ export interface Options {
   list: boolean;
   inputs?: string;
   inputsFile?: string;
+  synth: boolean;
 }
 
 /**
@@ -94,6 +95,7 @@ export function parseArgs(args: string[]): { path: string | null; options: Optio
 		validate: false,
 		help: false,
 		list: false,
+		synth: false,
 	};
 	let path: string | null = null;
 
@@ -122,6 +124,9 @@ export function parseArgs(args: string[]): { path: string | null; options: Optio
 		case "--list":
 		case "-l":
 			options.list = true;
+			break;
+		case "--synth":
+			options.synth = true;
 			break;
 		case "--inputs":
 			if (i + 1 < normalized.length) {
