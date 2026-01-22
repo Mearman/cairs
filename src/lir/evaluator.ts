@@ -17,11 +17,12 @@ import type {
 	Expr,
 	LIRDocument,
 	LirBlock,
+	LirHybridNode,
 	LirInstruction,
 	LirTerminator,
 	Value,
 } from "../types.js";
-import { errorVal, intVal, voidVal } from "../types.js";
+import { errorVal, intVal, isBlockNode, voidVal } from "../types.js";
 
 //==============================================================================
 // LIR Evaluation Options
@@ -73,33 +74,54 @@ export function evaluateLIR(
 		maxSteps: options?.maxSteps ?? 10000,
 	};
 
-	// Handle legacy LIR documents (blocks/entry) vs new structure (nodes/result)
-	const blocks = doc.blocks;
-	const entry = doc.entry;
-	if (!blocks || !entry) {
+	// Build node map for lookup
+	const nodeMap = new Map<string, LirHybridNode>();
+	for (const node of doc.nodes) {
+		nodeMap.set(node.id, node);
+	}
+
+	// Find the result node
+	const resultNode = nodeMap.get(doc.result);
+	if (!resultNode) {
 		return {
 			result: errorVal(
 				ErrorCodes.ValidationError,
-				"LIR document missing blocks or entry field",
+				"Result node not found: " + doc.result,
 			),
 			state,
 		};
 	}
 
+	// Evaluate the result node
+	if (!isBlockNode(resultNode)) {
+		// Expression node - not yet supported in LIR evaluator
+		return {
+			result: errorVal(
+				ErrorCodes.DomainError,
+				"LIR evaluator only supports block nodes",
+			),
+			state,
+		};
+	}
+
+	// Execute block node's CFG
+	const blocks = resultNode.blocks;
+	const entry = resultNode.entry;
+
 	// Validate entry block exists
-	const entryBlock = blocks.find((b) => b.id === entry);
+	const entryBlock = blocks.find((b: LirBlock) => b.id === entry);
 	if (!entryBlock) {
 		return {
 			result: errorVal(
 				ErrorCodes.ValidationError,
-				"Entry block not found: " + doc.entry,
+				"Entry block not found: " + entry,
 			),
 			state,
 		};
 	}
 
 	// Execute CFG starting from entry
-	let currentBlockId = doc.entry;
+	let currentBlockId: string | undefined = entry;
 	const executedBlocks = new Set<string>();
 
 	while (currentBlockId) {
@@ -121,7 +143,7 @@ export function evaluateLIR(
 		}
 
 		// Find current block
-		const currentBlock = blocks.find((b) => b.id === currentBlockId);
+		const currentBlock = blocks.find((b: LirBlock) => b.id === currentBlockId);
 		if (!currentBlock) {
 			return {
 				result: errorVal(
