@@ -91,14 +91,17 @@ export function lowerEIRtoLIR(eir: EIRDocument): LIRDocument {
 	// Ensure we have a return terminator in the final block
 	ensureReturnTerminator(ctx);
 
-	// Build unified LIR document structure
-	const lirDoc: LIRDocument = {
-		version: eir.version,
-		nodes: [], // New structure uses nodes
-		result: eir.result,
-		// Legacy fields for backward compatibility
+	// Build LIR document with a single block node containing all CFG blocks
+	const mainBlockNode = {
+		id: "main",
 		blocks: ctx.blocks,
 		entry: entryId,
+	};
+
+	const lirDoc: LIRDocument = {
+		version: eir.version,
+		nodes: [mainBlockNode],
+		result: "main",
 	};
 	if (eir.capabilities) {
 		lirDoc.capabilities = eir.capabilities;
