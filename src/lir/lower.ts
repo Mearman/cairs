@@ -5,12 +5,13 @@ import { CAIRSError, ErrorCodes } from "../errors.js";
 import type {
 	EIRDocument,
 	EirExpr,
-	EirNode,
+	EirHybridNode,
 	Expr,
 	LIRDocument,
 	LirBlock,
 	LirInstruction,
 } from "../types.js";
+import { isExprNode } from "../types.js";
 
 //==============================================================================
 // Lowering Context
@@ -19,7 +20,7 @@ import type {
 interface LoweringContext {
   blocks: LirBlock[];
   nextBlockId: number;
-  nodeMap: Map<string, EirNode>;
+  nodeMap: Map<string, EirHybridNode>;
 }
 
 /**
@@ -61,7 +62,7 @@ export function lowerEIRtoLIR(eir: EIRDocument): LIRDocument {
 		nodeMap: new Map(),
 	};
 
-	// Build node map for lookup
+	// Build node map for lookup (only expr nodes can be lowered)
 	for (const node of eir.nodes) {
 		ctx.nodeMap.set(node.id, node);
 	}
@@ -90,8 +91,12 @@ export function lowerEIRtoLIR(eir: EIRDocument): LIRDocument {
 	// Ensure we have a return terminator in the final block
 	ensureReturnTerminator(ctx);
 
+	// Build unified LIR document structure
 	const lirDoc: LIRDocument = {
 		version: eir.version,
+		nodes: [], // New structure uses nodes
+		result: eir.result,
+		// Legacy fields for backward compatibility
 		blocks: ctx.blocks,
 		entry: entryId,
 	};
@@ -130,11 +135,17 @@ interface BlockResult {
  * Returns the entry and exit block ids.
  */
 function lowerNode(
-	node: EirNode,
+	node: EirHybridNode,
 	currentBlock: string,
 	ctx: LoweringContext,
 	nextBlock: string | null,
 ): BlockResult {
+	// Skip block nodes - they're already in CFG form
+	if (!isExprNode(node)) {
+		// Block nodes pass through - their blocks are already LIR-like
+		return { entry: currentBlock, exit: currentBlock };
+	}
+
 	const expr = node.expr;
 
 	// Check for EIR-specific expressions
