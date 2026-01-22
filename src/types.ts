@@ -348,7 +348,7 @@ export interface FunctionSignature {
 	pure: boolean;
 }
 
-/** Legacy node type (expression-only) - kept for backward compatibility */
+/** Expression-only node type (used by ExprNode) */
 export interface Node<E = Expr> {
 	id: string;
 	expr: E;
@@ -431,7 +431,7 @@ export interface EirDerefExpr {
 // EIR expression type - extends CIR expressions
 export type EirExpr = Expr | EirSeqExpr | EirAssignExpr | EirWhileExpr | EirForExpr | EirIterExpr | EirEffectExpr | EirRefCellExpr | EirDerefExpr;
 
-// EIR node type alias for convenience (legacy, for backward compatibility)
+// EIR expression-only node type alias
 export type EirNode = Node<EirExpr>;
 
 export interface EIRDocument {
@@ -634,23 +634,10 @@ export function isExprNode<E, B>(node: HybridNode<E, B>): node is ExprNode<E> {
 }
 
 //==============================================================================
-// LIR Document (legacy format - document-level blocks)
-// Kept for backward compatibility during migration
+// LIR Document
 //==============================================================================
 
-/** Legacy LIR document with document-level blocks */
-export interface LIRDocumentLegacy {
-	version: string;
-	capabilities?: string[];
-	blocks: LirBlock[];
-	entry: string; // entry block id
-}
-
-//==============================================================================
-// Unified Document Types with Hybrid Node Support
-//==============================================================================
-
-/** LIR document - now uses unified nodes/result structure */
+/** LIR document - uses unified nodes/result structure */
 export interface LIRDocument {
 	version: string;
 	capabilities?: string[];
@@ -658,9 +645,6 @@ export interface LIRDocument {
 	airDefs?: AIRDef[];
 	nodes: LirHybridNode[];
 	result: string;
-	// Legacy fields (for backward compatibility during migration)
-	blocks?: LirBlock[];
-	entry?: string;
 }
 
 //==============================================================================
