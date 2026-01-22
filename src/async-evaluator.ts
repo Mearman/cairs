@@ -40,6 +40,7 @@ import {
 	intVal,
 	listVal,
 	type AsyncEvalState,
+	type Expr,
 } from "./types.js";
 import { emptyEffectRegistry, lookupEffect, type EffectRegistry } from "./effects.js";
 import {
@@ -199,9 +200,7 @@ export class AsyncEvaluator {
 			nodeValues.set(node.id, result.value);
 
 			// Update state from node evaluation
-			if (result.state) {
-				context.state = result.state;
-			}
+			context.state = result.state;
 		}
 
 		// Then evaluate block nodes (which can reference expression node values)
@@ -218,9 +217,7 @@ export class AsyncEvaluator {
 			nodeValues.set(node.id, result.value);
 
 			// Update state from node evaluation
-			if (result.state) {
-				context.state = result.state;
-			}
+			context.state = result.state;
 		}
 
 		// Return the result node
@@ -369,7 +366,7 @@ export class AsyncEvaluator {
 
 		switch (kind) {
 		case "assign":
-			return this.execAssign(instr as { kind: "assign"; target: string; value: string }, nodeValues, context);
+			return this.execAssign(instr as { kind: "assign"; target: string; value: Expr }, nodeValues, context);
 		case "op":
 			return this.execOp(instr as { kind: "op"; target: string; ns: string; name: string; args: string[] }, nodeValues, context);
 		case "spawn":
@@ -586,7 +583,7 @@ export class AsyncEvaluator {
 		// Handle timeout
 		if (expr.timeout) {
 			const timeoutValue = await this.resolveNodeRef(expr.timeout, env, context);
-			if (timeoutValue?.kind !== "int") {
+			if (timeoutValue.kind !== "int") {
 				return errorVal(ErrorCodes.TypeError, "await timeout must be an integer");
 			}
 			const timeoutMs = timeoutValue.value;
@@ -727,7 +724,7 @@ export class AsyncEvaluator {
 		// Add timeout promise if specified
 		if (expr.timeout) {
 			const timeoutValue = await this.resolveNodeRef(expr.timeout, env, context);
-			if (timeoutValue?.kind !== "int") {
+			if (timeoutValue.kind !== "int") {
 				return errorVal(ErrorCodes.TypeError, "select timeout must be an integer");
 			}
 			const timeoutMs = timeoutValue.value;
@@ -803,7 +800,7 @@ export class AsyncEvaluator {
 		case "lit":
 			return this.evalLit(expr);
 		case "var":
-			return this.evalVar(expr, env);
+			return this.evalVar(expr, env, context);
 		case "call":
 			return this.evalCall(expr, env, context);
 		case "if":
@@ -864,12 +861,22 @@ export class AsyncEvaluator {
 		}
 	}
 
-	private evalVar(expr: { kind: "var"; name: string }, env: ValueEnv): Value {
+	private evalVar(expr: { kind: "var"; name: string }, env: ValueEnv, context?: AsyncEvalContext): Value {
+		// First check environment
 		const value = lookupValue(env, expr.name);
-		if (!value) {
-			return errorVal(ErrorCodes.UnboundIdentifier, `Unbound variable: ${expr.name}`);
+		if (value) {
+			return value;
 		}
-		return value;
+
+		// Then check nodeValues (for expression node references)
+		if (context) {
+			const nodeValue = context.nodeValues.get(expr.name);
+			if (nodeValue && !isError(nodeValue)) {
+				return nodeValue;
+			}
+		}
+
+		return errorVal(ErrorCodes.UnboundIdentifier, `Unbound variable: ${expr.name}`);
 	}
 
 	private async evalCall(
@@ -979,7 +986,8 @@ export class AsyncEvaluator {
 		// Bind parameters with optional support
 		let newEnv = fnValue.env;
 		for (let i = 0; i < fnValue.params.length; i++) {
-			const param = fnValue.params[i]!;
+			const param = fnValue.params[i];
+			if (!param) break; // Should never happen, but TypeScript needs safety
 			const argValue = argValues[i];
 
 			if (argValue !== undefined) {
@@ -1023,7 +1031,8 @@ export class AsyncEvaluator {
 
 		// Create self-referential closure
 		const selfRef = closureVal(fnValue.params, fnValue.body, env);
-		const firstParamName = fnValue.params.length > 0 ? fnValue.params[0]!.name : "self";
+		const firstParam = fnValue.params[0];
+		const firstParamName = firstParam ? firstParam.name : "self";
 		const fixedEnv = extendValueEnv(env, firstParamName, selfRef);
 		selfRef.env = fixedEnv;
 
@@ -1156,7 +1165,7 @@ export class AsyncEvaluator {
 		context: AsyncEvalContext,
 	): Promise<Value> {
 		const cell = context.state.refCells.get(expr.target);
-		return cell ? cell : refCellVal(voidVal());
+		return cell ?? refCellVal(voidVal());
 	}
 
 	/**
@@ -1264,13 +1273,14 @@ export class AsyncEvaluator {
 	// ============================================================================
 
 	private async execAssign(
-		instr: { kind: "assign"; target: string; value: string },
+		instr: { kind: "assign"; target: string; value: Expr },
 		nodeValues: Map<string, Value>,
 		context: AsyncEvalContext,
 	): Promise<Value> {
-		const value = nodeValues.get(instr.value);
-		if (!value) {
-			return errorVal(ErrorCodes.DomainError, `Value not found: ${instr.value}`);
+		// Evaluate the value expression
+		const value = await this.evalExpr(instr.value, context.state.env, context);
+		if (isError(value)) {
+			return value;
 		}
 
 		// Update ref cell
@@ -1337,7 +1347,11 @@ export class AsyncEvaluator {
 
 		const taskEnv = extendValueEnvMany(
 			context.state.env,
-			instr.args ? instr.args.map((argId, i) => [argId, argValues[i]!] as [string, Value]) : []
+			instr.args
+				? instr.args
+					.map((argId, i) => [argId, argValues[i]] as [string, Value | undefined])
+					.filter((pair): pair is [string, Value] => pair[1] !== undefined)
+				: []
 		);
 
 		context.state.scheduler.spawn(taskId, async () => {
@@ -1520,10 +1534,12 @@ export class AsyncEvaluator {
 		// Store results if requested
 		if (term.results) {
 			for (let i = 0; i < results.length; i++) {
-				if (term.results[i] !== undefined) {
-					context.state.refCells.set(term.results[i]!, {
+				const resultCell = term.results[i];
+				const resultValue = results[i];
+				if (resultCell !== undefined && resultValue !== undefined) {
+					context.state.refCells.set(resultCell, {
 						kind: "refCell",
-						value: results[i]!,
+						value: resultValue,
 					});
 				}
 			}
