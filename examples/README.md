@@ -1,6 +1,6 @@
-# CAIRS Examples
+# SPIRAL Examples
 
-This directory contains examples demonstrating each Intermediate Representation (IR) layer in CAIRS.
+This directory contains examples demonstrating each Intermediate Representation (IR) layer in SPIRAL.
 
 ## Quick Start
 
@@ -88,7 +88,7 @@ Fixture files (e.g., `add-two-ints.inputs.json`) enable deterministic testing of
 
 ### Python Code Generation
 
-The `--synth` flag generates executable Python code from CAIRS documents:
+The `--synth` flag generates executable Python code from SPIRAL documents:
 
 ```bash
 # Generate Python from AIR example
@@ -107,7 +107,7 @@ pnpm run-example lir/control-flow/while-cfg --synth
 pnpm run-example pir/async/spawn-await --synth
 ```
 
-The generated Python code mirrors the structure of the original CAIRS document:
+The generated Python code mirrors the structure of the original SPIRAL document:
 - AIR/CIR/EIR: Nodes become variable bindings (`v_nodeId`), operators are mapped to Python equivalents
 - LIR: Blocks are emitted as a Python dict with an execution engine that interprets the CFG
 
@@ -181,7 +181,7 @@ pnpm test:examples --coverage
 
 ## Learning Path
 
-For those new to CAIRS, we recommend exploring examples in this order:
+For those new to SPIRAL, we recommend exploring examples in this order:
 
 1. **Start with AIR basics:**
    - `air/basics/literals.air.json` - Understand literal values
@@ -330,4 +330,4 @@ Each LIR block ends with a terminator:
 - [CIR README](./cir/README.md) - Detailed CIR reference
 - [EIR README](./eir/README.md) - Detailed EIR reference
 - [LIR README](./lir/README.md) - Detailed LIR reference
-- [CAIRS Repository](../) - Main project documentation
+- [SPIRAL Repository](../) - Main project documentation

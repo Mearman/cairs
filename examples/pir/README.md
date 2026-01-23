@@ -1,6 +1,6 @@
 # PIR Examples
 
-This directory contains examples demonstrating PIR (Parallel Intermediate Representation) - the async/parallel layer of CAIRS.
+This directory contains examples demonstrating PIR (Parallel Intermediate Representation) - the async/parallel layer of SPIRAL.
 
 ## Overview
 
@@ -309,6 +309,6 @@ await evaluator.evaluateDocument(doc, {
 
 ## Related Documentation
 
-- [Main README](../../README.md) - Complete CAIRS specification
+- [Main README](../../README.md) - Complete SPIRAL specification
 - [Examples README](../README.md) - All examples by layer
 - [PIR Schema](../../pir.schema.json) - PIR document schema

@@ -4,7 +4,7 @@ This example demonstrates CIR's optional parameters with default values.
 
 ## The Feature
 
-Like TypeScript, CAIRS CIR supports optional parameters and default values:
+Like TypeScript, SPIRAL CIR supports optional parameters and default values:
 - `optional: true` - parameter can be omitted
 - `default` - expression evaluated when parameter is omitted
 

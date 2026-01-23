@@ -1,6 +1,6 @@
 # AIR Examples
 
-AIR (Algebraic Intermediate Representation) is the pure, declarative layer of CAIRS. It expresses mathematical relationships without computation - no lambdas, recursion, or unbounded iteration.
+AIR (Algebraic Intermediate Representation) is the pure, declarative layer of SPIRAL. It expresses mathematical relationships without computation - no lambdas, recursion, or unbounded iteration.
 
 ## Expression Reference
 

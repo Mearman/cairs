@@ -13,7 +13,7 @@ Prints multiple greeting messages in a sequence, with no input processing. This 
 ## Output Pattern
 
 - Three `print` effects in sequence:
-  1. "Welcome to CAIRS!"
+  1. "Welcome to SPIRAL!"
   2. "This is a demonstration."
   3. "Goodbye!"
 
@@ -26,7 +26,7 @@ pnpm run-example eir/interactive/greeting-sequence
 ## Expected Output
 
 ```
-Welcome to CAIRS!
+Welcome to SPIRAL!
 This is a demonstration.
 Goodbye!
 ```
