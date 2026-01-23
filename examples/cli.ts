@@ -1,8 +1,8 @@
 #!/usr/bin/env tsx
 /**
- * CAIRS Example Runner
+ * SPIRAL Example Runner
  *
- * A CLI tool for running and exploring CAIRS examples.
+ * A CLI tool for running and exploring SPIRAL examples.
  *
  * Usage:
  *   pnpm run-example <path>          # Run an example
@@ -212,7 +212,7 @@ async function findExamples(dir: string, baseDir = dir): Promise<ExampleInfo[]> 
 }
 
 function listExamples(examples: ExampleInfo[]): void {
-	print(`\n${colors.bold}CAIRS Examples${colors.reset}\n`, "reset");
+	print(`\n${colors.bold}SPIRAL Examples${colors.reset}\n`, "reset");
 
 	const byIR = examples.reduce(
 		(acc, ex) => {
@@ -420,7 +420,7 @@ async function runExample(path: string, options: Options): Promise<boolean> {
 				return false;
 			}
 			print(`${colors.bold}Synthesizing Python code...${colors.reset}`, "reset");
-			const pythonCode = synthesizePython(doc as AIRDocument | CIRDocument | EIRDocument | LIRDocument, { moduleName: `cairs_example_${path.replace(/[/\\-]/g, "_")}` });
+			const pythonCode = synthesizePython(doc as AIRDocument | CIRDocument | EIRDocument | LIRDocument, { moduleName: `spiral_example_${path.replace(/[/\\-]/g, "_")}` });
 			print(pythonCode);
 			print(`${colors.green}✓ Synthesis complete${colors.reset}\n`, "green");
 			return true;
@@ -556,7 +556,7 @@ async function runExample(path: string, options: Options): Promise<boolean> {
 }
 
 function showHelp(): void {
-	print(`\n${colors.bold}CAIRS Example Runner${colors.reset}\n`, "reset");
+	print(`\n${colors.bold}SPIRAL Example Runner${colors.reset}\n`, "reset");
 	print(`${colors.bold}Usage:${colors.reset}`, "reset");
 	print("  pnpm run-example <path> [options]\n", "reset");
 	print(`${colors.bold}Examples:${colors.reset}`, "reset");

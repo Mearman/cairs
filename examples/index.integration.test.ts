@@ -1,5 +1,5 @@
 /**
- * CAIRS Examples Test Runner
+ * SPIRAL Examples Test Runner
  *
  * Validates and evaluates all example files to ensure they work correctly.
  */
