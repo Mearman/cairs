@@ -15,7 +15,7 @@ CAIRS is a JSON-first intermediate representation spanning AIR, CIR, EIR, PIR, a
 | **PIR** | Parallel IR | Turing-Complete | Async/parallel primitives (`spawn`, `await`, channels) |
 | **LIR** | Low-Level IR | Turing-Complete | CFG-based, SSA with phi nodes |
 
-See [docs/Architecture.md](docs/Architecture.md) for details.
+See [wiki/Architecture.md](wiki/Architecture.md) for details.
 
 ## Quick start
 ```bash
@@ -31,10 +31,10 @@ pnpm run-example air/basics/arithmetic/arithmetic
 ```
 
 ## Wiki
-- Wiki home & navigation: [docs/Home.md](docs/Home.md)
-- Quick start: [docs/Quick-Start.md](docs/Quick-Start.md)
-- Examples & learning path: [docs/Examples.md](docs/Examples.md)
-- Architecture (layers, expression/CFG hybrids): [docs/Architecture.md](docs/Architecture.md)
-- Specification (sections): [docs/Specification.md](docs/Specification.md)
-- Appendices: [docs/Appendices.md](docs/Appendices.md)
-- Schemas and references: [docs/Schemas-and-References.md](docs/Schemas-and-References.md)
+- Wiki home & navigation: [wiki/Home.md](wiki/Home.md)
+- Quick start: [wiki/Quick-Start.md](wiki/Quick-Start.md)
+- Examples & learning path: [wiki/Examples.md](wiki/Examples.md)
+- Architecture (layers, expression/CFG hybrids): [wiki/Architecture.md](wiki/Architecture.md)
+- Specification (sections): [wiki/Specification.md](wiki/Specification.md)
+- Appendices: [wiki/Appendices.md](wiki/Appendices.md)
+- Schemas and references: [wiki/Schemas-and-References.md](wiki/Schemas-and-References.md)

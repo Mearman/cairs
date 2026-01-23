@@ -55,7 +55,7 @@ export default [
 			"dist/**",
 			"node_modules/**",
 			"coverage/**",
-			"docs/**",
+			"wiki/**",
 			"*.config.js",
 			"*.config.mjs",
 			"*.config.ts", // Ignore config file to avoid parsing issues

@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - "docs/**"
+      - "wiki/**"
   workflow_dispatch:
 
 permissions:
@@ -21,11 +21,11 @@ jobs:
           submodules: true
           fetch-depth: 0
 
-      - name: Push docs to wiki
+      - name: Push wiki to wiki repo
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          cd docs
+          cd wiki
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git remote set-url origin https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.wiki.git
