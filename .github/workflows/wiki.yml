@@ -7,12 +7,16 @@ on:
     paths:
       - "wiki/**"
   workflow_dispatch:
+  schedule:
+    # Run every hour to check for external wiki changes
+    - cron: '0 * * * *'
 
 permissions:
   contents: write
 
 jobs:
-  sync:
+  sync-to-wiki:
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout with submodules
@@ -30,3 +34,37 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git remote set-url origin https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.wiki.git
           git push origin HEAD:master
+
+  sync-from-wiki:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout with submodules
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pull latest from wiki repo
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd wiki
+          git fetch origin
+          git reset --hard origin/master
+          cd ..
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Check for changes and commit
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [[ -n $(git status --porcelain wiki) ]]; then
+            git add wiki
+            git commit -m "chore: sync wiki submodule from upstream"
+            git push
+          else
+            echo "No changes in wiki submodule"
+          fi
