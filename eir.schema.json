@@ -1,11 +1,11 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://raw.githubusercontent.com/Mearman/cairs/refs/heads/main/eir.schema.json",
+  "$id": "https://raw.githubusercontent.com/Mearman/SPIRAL/refs/heads/main/eir.schema.json",
   "title": "EIR (Execution Intermediate Representation)",
   "description": "Expression-based Execution IR extending CIR with sequencing, mutation, effects, and loops.",
   "allOf": [
     {
-      "$ref": "https://raw.githubusercontent.com/Mearman/cairs/refs/heads/main/cir.schema.json"
+      "$ref": "https://raw.githubusercontent.com/Mearman/SPIRAL/refs/heads/main/cir.schema.json"
     },
     {
       "type": "object",
@@ -34,7 +34,7 @@
           "$ref": "#/$defs/id"
         },
         "type": {
-          "$ref": "https://raw.githubusercontent.com/Mearman/cairs/refs/heads/main/air.schema.json#/$defs/type"
+          "$ref": "https://raw.githubusercontent.com/Mearman/SPIRAL/refs/heads/main/air.schema.json#/$defs/type"
         },
         "expr": {
           "$ref": "#/$defs/exprEir"
@@ -50,14 +50,14 @@
           "$ref": "#/$defs/id"
         },
         "type": {
-          "$ref": "https://raw.githubusercontent.com/Mearman/cairs/refs/heads/main/air.schema.json#/$defs/type"
+          "$ref": "https://raw.githubusercontent.com/Mearman/SPIRAL/refs/heads/main/air.schema.json#/$defs/type"
         }
       }
     },
     "exprEir": {
       "oneOf": [
         {
-          "$ref": "https://raw.githubusercontent.com/Mearman/cairs/refs/heads/main/cir.schema.json#/$defs/exprCir"
+          "$ref": "https://raw.githubusercontent.com/Mearman/SPIRAL/refs/heads/main/cir.schema.json#/$defs/exprCir"
         },
         {
           "$ref": "#/$defs/expr_seq"
@@ -90,11 +90,11 @@
         "params": {
           "type": "array",
           "items": {
-            "$ref": "https://raw.githubusercontent.com/Mearman/cairs/refs/heads/main/air.schema.json#/$defs/type"
+            "$ref": "https://raw.githubusercontent.com/Mearman/SPIRAL/refs/heads/main/air.schema.json#/$defs/type"
           }
         },
         "returns": {
-          "$ref": "https://raw.githubusercontent.com/Mearman/cairs/refs/heads/main/air.schema.json#/$defs/type"
+          "$ref": "https://raw.githubusercontent.com/Mearman/SPIRAL/refs/heads/main/air.schema.json#/$defs/type"
         }
       }
     },

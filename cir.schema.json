@@ -1,10 +1,10 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://raw.githubusercontent.com/Mearman/cairs/refs/heads/main/cir.schema.json",
+  "$id": "https://raw.githubusercontent.com/Mearman/SPIRAL/refs/heads/main/cir.schema.json",
   "title": "CIR (Computational IR)",
   "allOf": [
     {
-      "$ref": "https://raw.githubusercontent.com/Mearman/cairs/refs/heads/main/air.schema.json"
+      "$ref": "https://raw.githubusercontent.com/Mearman/SPIRAL/refs/heads/main/air.schema.json"
     },
     {
       "type": "object",
@@ -33,7 +33,7 @@
           "$ref": "#/$defs/id"
         },
         "type": {
-          "$ref": "https://raw.githubusercontent.com/Mearman/cairs/refs/heads/main/air.schema.json#/$defs/type"
+          "$ref": "https://raw.githubusercontent.com/Mearman/SPIRAL/refs/heads/main/air.schema.json#/$defs/type"
         },
         "expr": {
           "$ref": "#/$defs/exprCir"
@@ -49,7 +49,7 @@
           "$ref": "#/$defs/id"
         },
         "type": {
-          "$ref": "https://raw.githubusercontent.com/Mearman/cairs/refs/heads/main/air.schema.json#/$defs/type"
+          "$ref": "https://raw.githubusercontent.com/Mearman/SPIRAL/refs/heads/main/air.schema.json#/$defs/type"
         }
       }
     },
@@ -62,7 +62,7 @@
           "$ref": "#/$defs/id"
         },
         "type": {
-          "$ref": "https://raw.githubusercontent.com/Mearman/cairs/refs/heads/main/air.schema.json#/$defs/type"
+          "$ref": "https://raw.githubusercontent.com/Mearman/SPIRAL/refs/heads/main/air.schema.json#/$defs/type"
         },
         "optional": {
           "type": "boolean"
@@ -75,7 +75,7 @@
     "exprCir": {
       "oneOf": [
         {
-          "$ref": "https://raw.githubusercontent.com/Mearman/cairs/refs/heads/main/air.schema.json#/$defs/exprAir"
+          "$ref": "https://raw.githubusercontent.com/Mearman/SPIRAL/refs/heads/main/air.schema.json#/$defs/exprAir"
         },
         {
           "$ref": "#/$defs/expr_lambda"
@@ -99,11 +99,11 @@
         "params": {
           "type": "array",
           "items": {
-            "$ref": "https://raw.githubusercontent.com/Mearman/cairs/refs/heads/main/air.schema.json#/$defs/type"
+            "$ref": "https://raw.githubusercontent.com/Mearman/SPIRAL/refs/heads/main/air.schema.json#/$defs/type"
           }
         },
         "returns": {
-          "$ref": "https://raw.githubusercontent.com/Mearman/cairs/refs/heads/main/air.schema.json#/$defs/type"
+          "$ref": "https://raw.githubusercontent.com/Mearman/SPIRAL/refs/heads/main/air.schema.json#/$defs/type"
         },
         "optionalParams": {
           "type": "array",

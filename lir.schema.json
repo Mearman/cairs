@@ -1,11 +1,11 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://raw.githubusercontent.com/Mearman/cairs/refs/heads/main/lir.schema.json",
+  "$id": "https://raw.githubusercontent.com/Mearman/SPIRAL/refs/heads/main/lir.schema.json",
   "title": "LIR (Low-level Intermediate Representation)",
   "description": "Low-level IR with explicit control flow graph, extending CIR expressions.",
   "allOf": [
     {
-      "$ref": "https://raw.githubusercontent.com/Mearman/cairs/refs/heads/main/cir.schema.json"
+      "$ref": "https://raw.githubusercontent.com/Mearman/SPIRAL/refs/heads/main/cir.schema.json"
     },
     {
       "type": "object",
@@ -87,7 +87,7 @@
           "$ref": "#/$defs/id"
         },
         "value": {
-          "$ref": "https://raw.githubusercontent.com/Mearman/cairs/refs/heads/main/cir.schema.json#/$defs/exprCir"
+          "$ref": "https://raw.githubusercontent.com/Mearman/SPIRAL/refs/heads/main/cir.schema.json#/$defs/exprCir"
         }
       }
     },

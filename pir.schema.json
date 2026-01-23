@@ -1,11 +1,11 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://raw.githubusercontent.com/Mearman/cairs/refs/heads/main/pir.schema.json",
+  "$id": "https://raw.githubusercontent.com/Mearman/SPIRAL/refs/heads/main/pir.schema.json",
   "title": "PIR (Parallel Intermediate Representation)",
   "description": "Parallel IR extending EIR with async primitives (par, spawn, await, channels) for concurrent execution.",
   "allOf": [
     {
-      "$ref": "https://raw.githubusercontent.com/Mearman/cairs/refs/heads/main/eir.schema.json"
+      "$ref": "https://raw.githubusercontent.com/Mearman/SPIRAL/refs/heads/main/eir.schema.json"
     },
     {
       "type": "object",
@@ -39,7 +39,7 @@
           "$ref": "#/$defs/id"
         },
         "type": {
-          "$ref": "https://raw.githubusercontent.com/Mearman/cairs/refs/heads/main/air.schema.json#/$defs/type"
+          "$ref": "https://raw.githubusercontent.com/Mearman/SPIRAL/refs/heads/main/air.schema.json#/$defs/type"
         },
         "expr": {
           "$ref": "#/$defs/exprPir"
@@ -86,7 +86,7 @@
     "exprPir": {
       "oneOf": [
         {
-          "$ref": "https://raw.githubusercontent.com/Mearman/cairs/refs/heads/main/eir.schema.json#/$defs/exprEir"
+          "$ref": "https://raw.githubusercontent.com/Mearman/SPIRAL/refs/heads/main/eir.schema.json#/$defs/exprEir"
         },
         {
           "$ref": "#/$defs/expr_par"
@@ -264,7 +264,7 @@
     "pirInstruction": {
       "oneOf": [
         {
-          "$ref": "https://raw.githubusercontent.com/Mearman/cairs/refs/heads/main/eir.schema.json#/$defs/expr_effect"
+          "$ref": "https://raw.githubusercontent.com/Mearman/SPIRAL/refs/heads/main/eir.schema.json#/$defs/expr_effect"
         },
         {
           "$ref": "#/$defs/ins_spawn"
@@ -341,13 +341,13 @@
     "pirTerminator": {
       "oneOf": [
         {
-          "$ref": "https://raw.githubusercontent.com/Mearman/cairs/refs/heads/main/lir.schema.json#/$defs/term_jump"
+          "$ref": "https://raw.githubusercontent.com/Mearman/SPIRAL/refs/heads/main/lir.schema.json#/$defs/term_jump"
         },
         {
-          "$ref": "https://raw.githubusercontent.com/Mearman/cairs/refs/heads/main/lir.schema.json#/$defs/term_branch"
+          "$ref": "https://raw.githubusercontent.com/Mearman/SPIRAL/refs/heads/main/lir.schema.json#/$defs/term_branch"
         },
         {
-          "$ref": "https://raw.githubusercontent.com/Mearman/cairs/refs/heads/main/lir.schema.json#/$defs/term_return"
+          "$ref": "https://raw.githubusercontent.com/Mearman/SPIRAL/refs/heads/main/lir.schema.json#/$defs/term_return"
         },
         {
           "$ref": "#/$defs/term_fork"
@@ -441,7 +441,7 @@
           "const": "future"
         },
         "of": {
-          "$ref": "https://raw.githubusercontent.com/Mearman/cairs/refs/heads/main/air.schema.json#/$defs/type"
+          "$ref": "https://raw.githubusercontent.com/Mearman/SPIRAL/refs/heads/main/air.schema.json#/$defs/type"
         }
       }
     },
@@ -458,7 +458,7 @@
           "enum": ["mpsc", "spsc", "mpmc", "broadcast"]
         },
         "of": {
-          "$ref": "https://raw.githubusercontent.com/Mearman/cairs/refs/heads/main/air.schema.json#/$defs/type"
+          "$ref": "https://raw.githubusercontent.com/Mearman/SPIRAL/refs/heads/main/air.schema.json#/$defs/type"
         }
       }
     },
@@ -471,7 +471,7 @@
           "const": "task"
         },
         "returns": {
-          "$ref": "https://raw.githubusercontent.com/Mearman/cairs/refs/heads/main/air.schema.json#/$defs/type"
+          "$ref": "https://raw.githubusercontent.com/Mearman/SPIRAL/refs/heads/main/air.schema.json#/$defs/type"
         }
       }
     },
@@ -486,7 +486,7 @@
         "params": {
           "type": "array",
           "items": {
-            "$ref": "https://raw.githubusercontent.com/Mearman/cairs/refs/heads/main/air.schema.json#/$defs/type"
+            "$ref": "https://raw.githubusercontent.com/Mearman/SPIRAL/refs/heads/main/air.schema.json#/$defs/type"
           }
         },
         "returns": {
