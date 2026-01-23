@@ -1,7 +1,7 @@
-// CAIRS Core Domain
+// SPIRAL Core Domain
 // Arithmetic and comparison operators
 
-import { CAIRSError, ErrorCodes } from "../errors.js";
+import { SPIRALError, ErrorCodes } from "../errors.js";
 import type { Type, Value } from "../types.js";
 import {
 	boolType,
@@ -26,15 +26,15 @@ import {
 
 function expectInt(v: Value): number {
 	if (v.kind === "int") return v.value;
-	if (v.kind === "error") throw CAIRSError.domainError(v.message ?? v.code);
-	throw CAIRSError.typeError(intType, { kind: v.kind } as Type);
+	if (v.kind === "error") throw SPIRALError.domainError(v.message ?? v.code);
+	throw SPIRALError.typeError(intType, { kind: v.kind } as Type);
 }
 
 function getNumeric(v: Value): number {
 	if (v.kind === "int") return v.value;
 	if (v.kind === "float") return v.value;
-	if (v.kind === "error") throw CAIRSError.domainError(v.message ?? v.code);
-	throw CAIRSError.typeError(floatType, { kind: v.kind } as Type);
+	if (v.kind === "error") throw SPIRALError.domainError(v.message ?? v.code);
+	throw SPIRALError.typeError(floatType, { kind: v.kind } as Type);
 }
 
 //==============================================================================

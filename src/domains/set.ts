@@ -1,4 +1,4 @@
-// CAIRS Set Domain
+// SPIRAL Set Domain
 // Set operators
 
 import { ErrorCodes } from "../errors.js";

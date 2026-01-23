@@ -1,7 +1,7 @@
-// CAIRS Bool Domain
+// SPIRAL Bool Domain
 // Boolean algebra operators
 
-import { CAIRSError } from "../errors.js";
+import { SPIRALError } from "../errors.js";
 import type { Type, Value } from "../types.js";
 import { boolType, boolVal, isError } from "../types.js";
 import {
@@ -17,8 +17,8 @@ import {
 
 function expectBool(v: Value): boolean {
 	if (v.kind === "bool") return v.value;
-	if (v.kind === "error") throw CAIRSError.domainError(v.message ?? v.code);
-	throw CAIRSError.typeError(boolType, { kind: v.kind } as Type);
+	if (v.kind === "error") throw SPIRALError.domainError(v.message ?? v.code);
+	throw SPIRALError.typeError(boolType, { kind: v.kind } as Type);
 }
 
 //==============================================================================

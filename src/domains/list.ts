@@ -1,4 +1,4 @@
-// CAIRS List Domain
+// SPIRAL List Domain
 // List operators
 
 import { ErrorCodes } from "../errors.js";
