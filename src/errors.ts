@@ -1,4 +1,4 @@
-// CAIRS Error Types
+// SPIRAL Error Types
 // Error domain for type checking and evaluation errors
 
 import type { Type, Value } from "./types.js";
@@ -42,16 +42,16 @@ export const ErrorCodes = {
 export type ErrorCode = (typeof ErrorCodes)[keyof typeof ErrorCodes];
 
 //==============================================================================
-// CAIRS Error Class
+// SPIRAL Error Class
 //==============================================================================
 
-export class CAIRSError extends Error {
+export class SPIRALError extends Error {
 	readonly code: ErrorCode;
 	readonly meta?: Map<string, Value>;
 
 	constructor(code: ErrorCode, message: string, meta?: Map<string, Value>) {
 		super(message);
-		this.name = "CAIRSError";
+		this.name = "SPIRALError";
 		this.code = code;
 		if (meta !== undefined) this.meta = meta;
 	}
@@ -75,9 +75,9 @@ export class CAIRSError extends Error {
 	/**
 	 * Create a TypeError
 	 */
-	static typeError(expected: Type, got: Type, context?: string): CAIRSError {
+	static typeError(expected: Type, got: Type, context?: string): SPIRALError {
 		const ctx = context ? " (" + context + ")" : "";
-		return new CAIRSError(
+		return new SPIRALError(
 			ErrorCodes.TypeError,
 			"Type error" +
 				ctx +
@@ -91,8 +91,8 @@ export class CAIRSError extends Error {
 	/**
 	 * Create an ArityError
 	 */
-	static arityError(expected: number, got: number, name: string): CAIRSError {
-		return new CAIRSError(
+	static arityError(expected: number, got: number, name: string): SPIRALError {
+		return new SPIRALError(
 			ErrorCodes.ArityError,
 			"Arity error: " +
 				name +
@@ -106,22 +106,22 @@ export class CAIRSError extends Error {
 	/**
 	 * Create a DomainError
 	 */
-	static domainError(message: string): CAIRSError {
-		return new CAIRSError(ErrorCodes.DomainError, message);
+	static domainError(message: string): SPIRALError {
+		return new SPIRALError(ErrorCodes.DomainError, message);
 	}
 
 	/**
 	 * Create a DivideByZero error
 	 */
-	static divideByZero(): CAIRSError {
-		return new CAIRSError(ErrorCodes.DivideByZero, "Division by zero");
+	static divideByZero(): SPIRALError {
+		return new SPIRALError(ErrorCodes.DivideByZero, "Division by zero");
 	}
 
 	/**
 	 * Create an UnknownOperator error
 	 */
-	static unknownOperator(ns: string, name: string): CAIRSError {
-		return new CAIRSError(
+	static unknownOperator(ns: string, name: string): SPIRALError {
+		return new SPIRALError(
 			ErrorCodes.UnknownOperator,
 			"Unknown operator: " + ns + ":" + name,
 		);
@@ -130,8 +130,8 @@ export class CAIRSError extends Error {
 	/**
 	 * Create an UnknownDefinition error
 	 */
-	static unknownDefinition(ns: string, name: string): CAIRSError {
-		return new CAIRSError(
+	static unknownDefinition(ns: string, name: string): SPIRALError {
+		return new SPIRALError(
 			ErrorCodes.UnknownDefinition,
 			"Unknown definition: " + ns + ":" + name,
 		);
@@ -140,8 +140,8 @@ export class CAIRSError extends Error {
 	/**
 	 * Create an UnboundIdentifier error
 	 */
-	static unboundIdentifier(name: string): CAIRSError {
-		return new CAIRSError(
+	static unboundIdentifier(name: string): SPIRALError {
+		return new SPIRALError(
 			ErrorCodes.UnboundIdentifier,
 			"Unbound identifier: " + name,
 		);
@@ -150,8 +150,8 @@ export class CAIRSError extends Error {
 	/**
 	 * Create a NonTermination error
 	 */
-	static nonTermination(): CAIRSError {
-		return new CAIRSError(
+	static nonTermination(): SPIRALError {
+		return new SPIRALError(
 			ErrorCodes.NonTermination,
 			"Expression evaluation did not terminate",
 		);
@@ -164,8 +164,8 @@ export class CAIRSError extends Error {
 		path: string,
 		message: string,
 		value?: unknown,
-	): CAIRSError {
-		return new CAIRSError(
+	): SPIRALError {
+		return new SPIRALError(
 			ErrorCodes.ValidationError,
 			"Validation error at " +
 				path +

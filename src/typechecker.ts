@@ -1,9 +1,9 @@
-// CAIRS Type Checker
+// SPIRAL Type Checker
 // Implements typing rules: Γ ⊢ e : τ
 
 import { lookupOperator, type OperatorRegistry } from "./domains/registry.js";
 import { TypeEnv, emptyTypeEnv, extendTypeEnv, lookupDef, lookupType, type Defs } from "./env.js";
-import { CAIRSError, exhaustive } from "./errors.js";
+import { SPIRALError, exhaustive } from "./errors.js";
 import type { AIRDocument, AirHybridNode, EirHybridNode, Expr, Node, Type } from "./types.js";
 import { isBlockNode, isExprNode } from "./types.js";
 import {
@@ -66,7 +66,7 @@ export class TypeChecker {
 		case "fix":
 			return this.typeCheckFix(expr, env);
 		default:
-			throw CAIRSError.validation(
+			throw SPIRALError.validation(
 				"expression",
 				"Unknown expression kind: " + (expr as { kind: string }).kind,
 			);
@@ -133,12 +133,12 @@ export class TypeChecker {
 	): TypeCheckResult {
 		const op = lookupOperator(this.registry, expr.ns, expr.name);
 		if (!op) {
-			throw CAIRSError.unknownOperator(expr.ns, expr.name);
+			throw SPIRALError.unknownOperator(expr.ns, expr.name);
 		}
 
 		// Check arity
 		if (op.params.length !== expr.args.length) {
-			throw CAIRSError.arityError(
+			throw SPIRALError.arityError(
 				op.params.length,
 				expr.args.length,
 				expr.ns + ":" + expr.name,
@@ -164,7 +164,7 @@ export class TypeChecker {
 			if ("kind" in arg) {
 				const argResult = this.typeCheck(arg, env);
 				if (!typeEqual(argResult.type, expectedType)) {
-					throw CAIRSError.typeError(
+					throw SPIRALError.typeError(
 						expectedType,
 						argResult.type,
 						`argument ${i + 1} of ${expr.ns}:${expr.name}`,
@@ -212,12 +212,12 @@ export class TypeChecker {
 	): TypeCheckResult {
 		const def = lookupDef(this.defs, expr.ns, expr.name);
 		if (!def) {
-			throw CAIRSError.unknownDefinition(expr.ns, expr.name);
+			throw SPIRALError.unknownDefinition(expr.ns, expr.name);
 		}
 
 		// Check arity
 		if (def.params.length !== expr.args.length) {
-			throw CAIRSError.arityError(
+			throw SPIRALError.arityError(
 				def.params.length,
 				expr.args.length,
 				expr.ns + ":" + expr.name,
@@ -250,7 +250,7 @@ export class TypeChecker {
 	): TypeCheckResult {
 		// Lambda type should be a FnType
 		if (expr.type.kind !== "fn") {
-			throw CAIRSError.typeError(fnTypeCtor([], intType), expr.type, "lambda");
+			throw SPIRALError.typeError(fnTypeCtor([], intType), expr.type, "lambda");
 		}
 		return { type: expr.type, env };
 	}
@@ -445,7 +445,7 @@ export function typeCheckProgram(
 	// Get the result type
 	const resultType = nodeTypes.get(doc.result);
 	if (!resultType) {
-		throw CAIRSError.validation(
+		throw SPIRALError.validation(
 			"result",
 			"Result node not found: " + doc.result,
 		);
@@ -488,7 +488,7 @@ function typeCheckNode(
 		// Look up the referenced node's type
 		const targetType = nodeTypes.get(expr.id);
 		if (!targetType) {
-			throw CAIRSError.validation(
+			throw SPIRALError.validation(
 				"ref",
 				"Referenced node not found: " + expr.id,
 			);
@@ -524,7 +524,7 @@ function typeCheckNode(
 			const condIsNode = nodeMap.has(expr.cond);
 			const condIsParam = lambdaParams.has(expr.cond);
 			if (!condIsNode && !condIsParam) {
-				throw CAIRSError.validation(
+				throw SPIRALError.validation(
 					"if",
 					"Condition node not found: " + expr.cond,
 				);
@@ -541,14 +541,14 @@ function typeCheckNode(
 		// Only validate condition type if we have a real type (not placeholder)
 		if (nodeTypes.has(typeof expr.cond === "string" ? expr.cond : "")) {
 			if (condType.kind !== "bool") {
-				throw CAIRSError.typeError(boolType, condType, "if condition");
+				throw SPIRALError.typeError(boolType, condType, "if condition");
 			}
 		}
 
 		let thenType: Type;
 		if (typeof expr.then === "string") {
 			if (!nodeMap.has(expr.then)) {
-				throw CAIRSError.validation(
+				throw SPIRALError.validation(
 					"if",
 					"Then branch node not found: " + expr.then,
 				);
@@ -569,7 +569,7 @@ function typeCheckNode(
 		let elseType: Type;
 		if (typeof expr.else === "string") {
 			if (!nodeMap.has(expr.else)) {
-				throw CAIRSError.validation(
+				throw SPIRALError.validation(
 					"if",
 					"Else branch node not found: " + expr.else,
 				);
@@ -591,12 +591,12 @@ function typeCheckNode(
 		const declaredType = expr.type;
 		if (nodeTypes.has(typeof expr.then === "string" ? expr.then : "")) {
 			if (!typeEqual(thenType, declaredType)) {
-				throw CAIRSError.typeError(declaredType, thenType, "if then branch");
+				throw SPIRALError.typeError(declaredType, thenType, "if then branch");
 			}
 		}
 		if (nodeTypes.has(typeof expr.else === "string" ? expr.else : "")) {
 			if (!typeEqual(elseType, declaredType)) {
-				throw CAIRSError.typeError(declaredType, elseType, "if else branch");
+				throw SPIRALError.typeError(declaredType, elseType, "if else branch");
 			}
 		}
 		return { type: declaredType, env };
@@ -613,7 +613,7 @@ function typeCheckNode(
 			const valueIsBound = boundNodes.has(expr.value);
 
 			if (!valueIsNode && !valueIsParam) {
-				throw CAIRSError.validation(
+				throw SPIRALError.validation(
 					"let",
 					"Value node not found: " + expr.value,
 				);
@@ -627,7 +627,7 @@ function typeCheckNode(
 					// Bound node or lambda param - defer type checking
 					valueType = intType; // placeholder
 				} else {
-					throw CAIRSError.validation(
+					throw SPIRALError.validation(
 						"let",
 						"Value node not yet type-checked: " + expr.value,
 					);
@@ -655,7 +655,7 @@ function typeCheckNode(
 			const bodyIsBound = boundNodes.has(expr.body);
 
 			if (!bodyIsNode && !bodyIsParam) {
-				throw CAIRSError.validation("let", "Body node not found: " + expr.body);
+				throw SPIRALError.validation("let", "Body node not found: " + expr.body);
 			}
 
 			const nodeBodyType = nodeTypes.get(expr.body);
@@ -664,7 +664,7 @@ function typeCheckNode(
 					// Bound node or lambda param - defer type checking
 					bodyType = intType; // placeholder
 				} else {
-					throw CAIRSError.validation(
+					throw SPIRALError.validation(
 						"let",
 						"Body node not yet type-checked: " + expr.body,
 					);
@@ -689,13 +689,13 @@ function typeCheckNode(
 		for (const argId of expr.args) {
 			const argNode = nodeMap.get(argId);
 			if (!argNode) {
-				throw CAIRSError.validation(
+				throw SPIRALError.validation(
 					"airRef",
 					"Argument node not found: " + argId,
 				);
 			}
 			if (!nodeTypes.has(argId)) {
-				throw CAIRSError.validation(
+				throw SPIRALError.validation(
 					"airRef",
 					"Argument node not yet type-checked: " + argId,
 				);
@@ -707,7 +707,7 @@ function typeCheckNode(
 	case "predicate": {
 		// Check value node exists
 		if (!nodeMap.has(expr.value)) {
-			throw CAIRSError.validation(
+			throw SPIRALError.validation(
 				"predicate",
 				"Value node not found: " + expr.value,
 			);
@@ -718,14 +718,14 @@ function typeCheckNode(
 	case "lambda": {
 		// Lambda body must be a node reference
 		if (!nodeMap.has(expr.body)) {
-			throw CAIRSError.validation(
+			throw SPIRALError.validation(
 				"lambda",
 				"Body node not found: " + expr.body,
 			);
 		}
 
 		if (expr.type.kind !== "fn") {
-			throw CAIRSError.typeError(
+			throw SPIRALError.typeError(
 				{ kind: "fn", params: [], returns: intType },
 				expr.type,
 				"lambda",
@@ -738,14 +738,14 @@ function typeCheckNode(
 		for (let i = 0; i < expr.params.length; i++) {
 			const paramType = lambdaType.params[i];
 			if (paramType === undefined) {
-				throw CAIRSError.validation(
+				throw SPIRALError.validation(
 					"lambda",
 					"Missing parameter type at index " + i,
 				);
 			}
 			const paramName = expr.params[i];
 			if (paramName === undefined) {
-				throw CAIRSError.validation(
+				throw SPIRALError.validation(
 					"lambda",
 					"Missing parameter name at index " + i,
 				);
@@ -756,7 +756,7 @@ function typeCheckNode(
 		// Check that body type matches return type
 		const bodyType = nodeTypes.get(expr.body);
 		if (bodyType && !typeEqual(bodyType, lambdaType.returns)) {
-			throw CAIRSError.typeError(lambdaType.returns, bodyType, "lambda body");
+			throw SPIRALError.typeError(lambdaType.returns, bodyType, "lambda body");
 		}
 
 		return { type: expr.type, env };
@@ -769,7 +769,7 @@ function typeCheckNode(
 		const fnIsBound = boundNodes.has(expr.fn);
 
 		if (!fnIsNode && !fnIsParam) {
-			throw CAIRSError.validation(
+			throw SPIRALError.validation(
 				"callExpr",
 				"Function node not found: " + expr.fn,
 			);
@@ -780,7 +780,7 @@ function typeCheckNode(
 			const argIsNode = nodeMap.has(argId);
 			const argIsParam = lambdaParams.has(argId);
 			if (!argIsNode && !argIsParam) {
-				throw CAIRSError.validation(
+				throw SPIRALError.validation(
 					"callExpr",
 					"Argument node not found: " + argId,
 				);
@@ -794,7 +794,7 @@ function typeCheckNode(
 			const fnTypeFromEnv = lookupType(env, expr.fn);
 			if (fnTypeFromEnv) {
 				if (fnTypeFromEnv.kind !== "fn") {
-					throw CAIRSError.typeError(
+					throw SPIRALError.typeError(
 						fnTypeCtor([], intType),
 						fnTypeFromEnv,
 						"callExpr function",
@@ -809,13 +809,13 @@ function typeCheckNode(
 		// Get function type from node types
 		const fnType = nodeTypes.get(expr.fn);
 		if (!fnType) {
-			throw CAIRSError.validation(
+			throw SPIRALError.validation(
 				"callExpr",
 				"Function node not yet type-checked: " + expr.fn,
 			);
 		}
 		if (fnType.kind !== "fn") {
-			throw CAIRSError.typeError(
+			throw SPIRALError.typeError(
 				fnTypeCtor([], intType),
 				fnType,
 				"callExpr function",
@@ -823,7 +823,7 @@ function typeCheckNode(
 		}
 		// Support partial application (currying)
 		if (expr.args.length > fnType.params.length) {
-			throw CAIRSError.arityError(
+			throw SPIRALError.arityError(
 				fnType.params.length,
 				expr.args.length,
 				"callExpr (too many arguments)",
@@ -834,7 +834,7 @@ function typeCheckNode(
 		for (let i = 0; i < expr.args.length; i++) {
 			const argId = expr.args[i];
 			if (argId === undefined) {
-				throw CAIRSError.validation(
+				throw SPIRALError.validation(
 					"callExpr",
 					"Missing argument id at index " + i,
 				);
@@ -846,13 +846,13 @@ function typeCheckNode(
 			const argType = nodeTypes.get(argId);
 			const expectedParamType = fnType.params[i];
 			if (expectedParamType === undefined) {
-				throw CAIRSError.validation(
+				throw SPIRALError.validation(
 					"callExpr",
 					"Missing parameter type at index " + i,
 				);
 			}
 			if (argType && !typeEqual(argType, expectedParamType)) {
-				throw CAIRSError.typeError(
+				throw SPIRALError.typeError(
 					expectedParamType,
 					argType,
 					"callExpr argument " + String(i),
@@ -873,7 +873,7 @@ function typeCheckNode(
 	case "fix": {
 		// Check function node exists
 		if (!nodeMap.has(expr.fn)) {
-			throw CAIRSError.validation(
+			throw SPIRALError.validation(
 				"fix",
 				"Function node not found: " + expr.fn,
 			);
@@ -882,30 +882,30 @@ function typeCheckNode(
 		// Get function type and verify it has the form fn(τ) -> τ
 		const fnType = nodeTypes.get(expr.fn);
 		if (!fnType) {
-			throw CAIRSError.validation(
+			throw SPIRALError.validation(
 				"fix",
 				"Function node not yet type-checked: " + expr.fn,
 			);
 		}
 		if (fnType.kind !== "fn") {
-			throw CAIRSError.typeError(
+			throw SPIRALError.typeError(
 				fnTypeCtor([], intType),
 				fnType,
 				"fix function",
 			);
 		}
 		if (fnType.params.length !== 1) {
-			throw CAIRSError.arityError(1, fnType.params.length, "fix");
+			throw SPIRALError.arityError(1, fnType.params.length, "fix");
 		}
 		const firstParam = fnType.params[0];
 		if (firstParam === undefined) {
-			throw CAIRSError.validation("fix", "Missing parameter type");
+			throw SPIRALError.validation("fix", "Missing parameter type");
 		}
 		if (!typeEqual(firstParam, fnType.returns)) {
-			throw CAIRSError.typeError(firstParam, fnType.returns, "fix");
+			throw SPIRALError.typeError(firstParam, fnType.returns, "fix");
 		}
 		if (!typeEqual(fnType.returns, expr.type)) {
-			throw CAIRSError.typeError(expr.type, fnType.returns, "fix");
+			throw SPIRALError.typeError(expr.type, fnType.returns, "fix");
 		}
 
 		return { type: expr.type, env };
@@ -995,7 +995,7 @@ export function typeCheckEIRProgram(
 	// Get the result type
 	const resultType = nodeTypes.get(doc.result);
 	if (!resultType) {
-		throw CAIRSError.validation(
+		throw SPIRALError.validation(
 			"result",
 			"Result node not found: " + doc.result,
 		);
@@ -1035,13 +1035,13 @@ function typeCheckEIRNode(
 			const e = expr as unknown as { first: string; then: string };
 			// T-Seq: Γ ⊢ first : T, Γ ⊢ then : U ⇒ Γ ⊢ seq(first, then) : U
 			if (!nodeMap.has(e.first)) {
-				throw CAIRSError.validation(
+				throw SPIRALError.validation(
 					"seq",
 					"First node not found: " + e.first,
 				);
 			}
 			if (!nodeMap.has(e.then)) {
-				throw CAIRSError.validation(
+				throw SPIRALError.validation(
 					"seq",
 					"Then node not found: " + e.then,
 				);
@@ -1049,7 +1049,7 @@ function typeCheckEIRNode(
 
 			const firstType = nodeTypes.get(e.first);
 			if (!firstType) {
-				throw CAIRSError.validation(
+				throw SPIRALError.validation(
 					"seq",
 					"First node not yet type-checked: " + e.first,
 				);
@@ -1057,7 +1057,7 @@ function typeCheckEIRNode(
 
 			const thenType = nodeTypes.get(e.then);
 			if (!thenType) {
-				throw CAIRSError.validation(
+				throw SPIRALError.validation(
 					"seq",
 					"Then node not yet type-checked: " + e.then,
 				);
@@ -1070,7 +1070,7 @@ function typeCheckEIRNode(
 			const e = expr as unknown as { target: string; value: string };
 			// T-Assign: Γ ⊢ value : T ⇒ Γ ⊢ assign(target, value) : void
 			if (!nodeMap.has(e.value)) {
-				throw CAIRSError.validation(
+				throw SPIRALError.validation(
 					"assign",
 					"Value node not found: " + e.value,
 				);
@@ -1078,7 +1078,7 @@ function typeCheckEIRNode(
 
 			const valueType = nodeTypes.get(e.value);
 			if (!valueType) {
-				throw CAIRSError.validation(
+				throw SPIRALError.validation(
 					"assign",
 					"Value node not yet type-checked: " + e.value,
 				);
@@ -1094,13 +1094,13 @@ function typeCheckEIRNode(
 			const e = expr as unknown as { cond: string; body: string };
 			// T-While: Γ ⊢ cond : bool, Γ ⊢ body : T ⇒ Γ ⊢ while(cond, body) : void
 			if (!nodeMap.has(e.cond)) {
-				throw CAIRSError.validation(
+				throw SPIRALError.validation(
 					"while",
 					"Condition node not found: " + e.cond,
 				);
 			}
 			if (!nodeMap.has(e.body)) {
-				throw CAIRSError.validation(
+				throw SPIRALError.validation(
 					"while",
 					"Body node not found: " + e.body,
 				);
@@ -1108,7 +1108,7 @@ function typeCheckEIRNode(
 
 			const condType = nodeTypes.get(e.cond);
 			if (condType && condType.kind !== "bool") {
-				throw CAIRSError.typeError(boolType, condType, "while condition");
+				throw SPIRALError.typeError(boolType, condType, "while condition");
 			}
 
 			return { type: voidType, env };
@@ -1118,25 +1118,25 @@ function typeCheckEIRNode(
 			const e = expr as unknown as { var: string; init: string; cond: string; update: string; body: string };
 			// T-For: (complex typing with var binding)
 			if (!nodeMap.has(e.init)) {
-				throw CAIRSError.validation(
+				throw SPIRALError.validation(
 					"for",
 					"Init node not found: " + e.init,
 				);
 			}
 			if (!nodeMap.has(e.cond)) {
-				throw CAIRSError.validation(
+				throw SPIRALError.validation(
 					"for",
 					"Condition node not found: " + e.cond,
 				);
 			}
 			if (!nodeMap.has(e.update)) {
-				throw CAIRSError.validation(
+				throw SPIRALError.validation(
 					"for",
 					"Update node not found: " + e.update,
 				);
 			}
 			if (!nodeMap.has(e.body)) {
-				throw CAIRSError.validation(
+				throw SPIRALError.validation(
 					"for",
 					"Body node not found: " + e.body,
 				);
@@ -1144,7 +1144,7 @@ function typeCheckEIRNode(
 
 			const condType = nodeTypes.get(e.cond);
 			if (condType && condType.kind !== "bool") {
-				throw CAIRSError.typeError(boolType, condType, "for condition");
+				throw SPIRALError.typeError(boolType, condType, "for condition");
 			}
 
 			// Get the loop variable type from init
@@ -1160,13 +1160,13 @@ function typeCheckEIRNode(
 			const e = expr as unknown as { var: string; iter: string; body: string };
 			// T-Iter: Γ ⊢ iter : list<T>, Γ ⊢ body : R ⇒ Γ ⊢ iter(var, iter, body) : void
 			if (!nodeMap.has(e.iter)) {
-				throw CAIRSError.validation(
+				throw SPIRALError.validation(
 					"iter",
 					"Iter node not found: " + e.iter,
 				);
 			}
 			if (!nodeMap.has(e.body)) {
-				throw CAIRSError.validation(
+				throw SPIRALError.validation(
 					"iter",
 					"Body node not found: " + e.body,
 				);
@@ -1174,7 +1174,7 @@ function typeCheckEIRNode(
 
 			const iterType = nodeTypes.get(e.iter);
 			if (iterType && iterType.kind !== "list") {
-				throw CAIRSError.typeError(
+				throw SPIRALError.typeError(
 					listType(intType),
 					iterType,
 					"iter iterable",
@@ -1194,7 +1194,7 @@ function typeCheckEIRNode(
 			// T-Effect: Look up effect signature, check args
 			const effect = effects.get(e.op);
 			if (!effect) {
-				throw CAIRSError.validation(
+				throw SPIRALError.validation(
 					"effect",
 					"Unknown effect operation: " + e.op,
 				);
@@ -1202,7 +1202,7 @@ function typeCheckEIRNode(
 
 			// Check arity
 			if (effect.params.length !== e.args.length) {
-				throw CAIRSError.arityError(
+				throw SPIRALError.arityError(
 					effect.params.length,
 					e.args.length,
 					"effect:" + e.op,
@@ -1213,7 +1213,7 @@ function typeCheckEIRNode(
 			for (let i = 0; i < e.args.length; i++) {
 				const argId = e.args[i];
 				if (argId === undefined) {
-					throw CAIRSError.validation(
+					throw SPIRALError.validation(
 						"effect",
 						"Missing argument id at index " + String(i),
 					);
@@ -1221,13 +1221,13 @@ function typeCheckEIRNode(
 				const argType = nodeTypes.get(argId);
 				const expectedParamType = effect.params[i];
 				if (expectedParamType === undefined) {
-					throw CAIRSError.validation(
+					throw SPIRALError.validation(
 						"effect",
 						"Missing parameter type at index " + String(i),
 					);
 				}
 				if (argType && !typeEqual(argType, expectedParamType)) {
-					throw CAIRSError.typeError(
+					throw SPIRALError.typeError(
 						expectedParamType,
 						argType,
 						"effect argument " + String(i),
@@ -1255,7 +1255,7 @@ function typeCheckEIRNode(
 			targetType ??= lookupType(env, e.target);
 
 			if (!targetType) {
-				throw CAIRSError.unboundIdentifier(e.target);
+				throw SPIRALError.unboundIdentifier(e.target);
 			}
 
 			return { type: refType(targetType), env };
@@ -1278,11 +1278,11 @@ function typeCheckEIRNode(
 			targetType ??= lookupType(env, e.target);
 
 			if (!targetType) {
-				throw CAIRSError.unboundIdentifier(e.target);
+				throw SPIRALError.unboundIdentifier(e.target);
 			}
 
 			if (targetType.kind !== "ref") {
-				throw CAIRSError.typeError(
+				throw SPIRALError.typeError(
 					refType(intType),
 					targetType,
 					"deref target",

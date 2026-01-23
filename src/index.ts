@@ -1,4 +1,4 @@
-// CAIRS - Computational Algebraic & Iterative Representation System
+// SPIRAL - Computational Algebraic & Iterative Representation System
 // Main exports
 
 //==============================================================================
@@ -57,9 +57,7 @@ export {
 // Error Codes
 //==============================================================================
 
-export { ErrorCodes } from "./types.js";
-
-export { CAIRSError } from "./errors.js";
+export { ErrorCodes, SPIRALError } from "./errors.js";
 
 //==============================================================================
 // Environment Functions

@@ -1,4 +1,4 @@
-// CAIRS Effect System
+// SPIRAL Effect System
 // Effect registry and built-in effects for EIR
 
 import type { Type, Value } from "./types.js";

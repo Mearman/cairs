@@ -1,4 +1,4 @@
-// CAIRS JSON Schemas
+// SPIRAL JSON Schemas
 // JSON Schema definitions for AIR, CIR, EIR, and LIR documents
 
 //==============================================================================

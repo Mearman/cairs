@@ -1,5 +1,5 @@
 /**
- * CAIRS CLI Utilities
+ * SPIRAL CLI Utilities
  *
  * Extracted CLI functions for testability and reusability:
  * - Input parsing (comma-separated and JSON formats)

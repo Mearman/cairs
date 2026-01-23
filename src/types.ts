@@ -1,4 +1,4 @@
-// CAIRS Type Definitions
+// SPIRAL Type Definitions
 // Implements Value, Type, and Expression AST domains
 
 //==============================================================================

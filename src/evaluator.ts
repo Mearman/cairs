@@ -1,4 +1,4 @@
-// CAIRS Evaluator
+// SPIRAL Evaluator
 // Implements big-step evaluation: ρ ⊢ e ⇓ v
 
 import { lookupOperator, type OperatorRegistry } from "./domains/registry.js";
@@ -10,7 +10,7 @@ import {
 	lookupDef,
 	lookupValue,
 } from "./env.js";
-import { CAIRSError, ErrorCodes, exhaustive } from "./errors.js";
+import { SPIRALError, ErrorCodes, exhaustive } from "./errors.js";
 import {
 	type AIRDocument,
 	type AirHybridNode,
@@ -515,7 +515,7 @@ export class Evaluator {
 	private checkSteps(state: EvalContext): void {
 		state.steps++;
 		if (state.steps > state.maxSteps) {
-			throw CAIRSError.nonTermination();
+			throw SPIRALError.nonTermination();
 		}
 	}
 }
@@ -940,7 +940,7 @@ function evalExprWithNodeMap(
 			try {
 				return op.fn(...argValues);
 			} catch (e) {
-				if (e instanceof CAIRSError) {
+				if (e instanceof SPIRALError) {
 					return e.toValue();
 				}
 				return errorVal(ErrorCodes.DomainError, String(e));
@@ -1230,7 +1230,7 @@ function executeBlockInstruction(
 			const result = op.fn(...argValues);
 			return { vars: extendValueEnv(vars, ins.target, result) };
 		} catch (e) {
-			if (e instanceof CAIRSError) {
+			if (e instanceof SPIRALError) {
 				return { vars, error: e.toValue() };
 			}
 			return { vars, error: errorVal(ErrorCodes.DomainError, String(e)) };
@@ -1487,7 +1487,7 @@ function evalNode(
 			const value = op.fn(...argValues);
 			return { value, env: currentEnv };
 		} catch (e) {
-			if (e instanceof CAIRSError) {
+			if (e instanceof SPIRALError) {
 				return { value: e.toValue(), env: currentEnv };
 			}
 			return { value: errorVal(ErrorCodes.DomainError, String(e)), env: currentEnv };
@@ -1820,7 +1820,7 @@ function evalNode(
 					const value = op.fn(...callArgValues);
 					return { value, env };
 				} catch (e) {
-					if (e instanceof CAIRSError) {
+					if (e instanceof SPIRALError) {
 						return { value: e.toValue(), env };
 					}
 					return { value: errorVal(ErrorCodes.DomainError, String(e)), env };
@@ -2067,7 +2067,7 @@ function evalNode(
 				const value = op.fn(...callArgValues);
 				return { value, env };
 			} catch (e) {
-				if (e instanceof CAIRSError) {
+				if (e instanceof SPIRALError) {
 					return { value: e.toValue(), env };
 				}
 				return { value: errorVal(ErrorCodes.DomainError, String(e)), env };
@@ -3013,7 +3013,7 @@ function evalEIRExpr(
 				refCells: state.refCells,
 			};
 		} catch (err) {
-			if (err instanceof CAIRSError) {
+			if (err instanceof SPIRALError) {
 				return { value: err.toValue(), env: state.env, refCells: state.refCells };
 			}
 			return {

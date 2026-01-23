@@ -1,4 +1,4 @@
-// CAIRS Schema Validator
+// SPIRAL Schema Validator
 // Manual structural validation for AIR and CIR documents
 
 import {

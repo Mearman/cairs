@@ -3,7 +3,7 @@
 /* eslint-disable @typescript-eslint/use-unknown-in-catch-callback-variable */
 /* eslint-disable no-useless-catch */
 
-// CAIRS Task Scheduler
+// SPIRAL Task Scheduler
 // Cooperative task scheduling for PIR async/parallel execution
 
 import type { Value } from "./types.js";
