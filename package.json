@@ -14,6 +14,7 @@
   "scripts": {
     "build": "tsc",
     "test": "tsx --test \"test/**/*.test.ts\"",
+    "test:seq": "for f in test/async-*.test.ts test/lir-async.test.ts test/scheduler.test.ts; do echo \"Running $f...\"; tsx --test \"$f\" || exit 1; done",
     "test:types": "tsc --noEmit -p tsconfig.test.json",
     "test:examples": "tsx --test \"examples/*.ts\"",
     "test:coverage": "c8 tsx --test \"test/**/*.test.ts\"",
