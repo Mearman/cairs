@@ -32,6 +32,29 @@ export interface VoidType {
 	kind: "void";
 }
 
+// Forward declarations for PIR types (must be before Type union)
+export interface FutureType {
+	kind: "future";
+	of: Type;
+}
+
+export interface ChannelType {
+	kind: "channel";
+	channelType: "mpsc" | "spsc" | "mpmc" | "broadcast";
+	of: Type;
+}
+
+export interface TaskType {
+	kind: "task";
+	returns: Type;
+}
+
+export interface AsyncFnType {
+	kind: "async";
+	params: Type[];
+	returns: FutureType;
+}
+
 export type Type =
 	| BoolType
 	| IntType
@@ -44,7 +67,11 @@ export type Type =
 	| OpaqueType
 	| FnType // CIR only
 	| RefType // EIR reference cell type
-	| VoidType; // EIR void type
+	| VoidType // EIR void type
+	| FutureType // PIR future type
+	| ChannelType // PIR channel type
+	| TaskType // PIR task type
+	| AsyncFnType; // PIR async function type
 
 export interface BoolType {
 	kind: "bool";
@@ -812,7 +839,9 @@ export function typeEqual(a: Type, b: Type): boolean {
 	case "list":
 	case "option":
 	case "ref":
-		return typeEqual(a.of, (b as SetType | ListType | OptionType | RefType).of);
+	case "future":
+	case "channel":
+		return typeEqual(a.of, (b as SetType | ListType | OptionType | RefType | FutureType | ChannelType).of);
 	case "map":
 		return (
 			typeEqual(a.key, (b as MapType).key) &&
@@ -834,6 +863,24 @@ export function typeEqual(a: Type, b: Type): boolean {
 			}
 		}
 		return typeEqual(a.returns, fnB.returns);
+	}
+	case "task": {
+		return typeEqual(a.returns, (b as TaskType).returns);
+	}
+	case "async": {
+		const asyncB = b as AsyncFnType;
+		if (a.params.length !== asyncB.params.length) return false;
+		for (let i = 0; i < a.params.length; i++) {
+			const paramA = a.params[i];
+			const paramB = asyncB.params[i];
+			if (paramA === undefined || paramB === undefined) {
+				return false;
+			}
+			if (!typeEqual(paramA, paramB)) {
+				return false;
+			}
+		}
+		return typeEqual(a.returns, asyncB.returns);
 	}
 	}
 }
