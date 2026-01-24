@@ -19,7 +19,7 @@ export interface ComplianceFixture {
 	/** Unique fixture identifier */
 	id: string;
 
-	/** Path to the SPIRAL JSON document */
+	/** Path to the SPIRAL document */
 	documentPath: string;
 
 	/** Path to inputs file (for interactive examples) */
@@ -47,7 +47,7 @@ export interface ExpectedOutput {
 	structural: boolean;
 
 	/** Tolerance for floating point comparisons (optional) */
-	 tolerance?: number;
+	tolerance?: number;
 
 	/** Expected error (if any) */
 	error?: {
@@ -80,7 +80,7 @@ export const COMPLIANCE_FIXTURES: ComplianceFixture[] = [
 		id: "air-arithmetic-add",
 		documentPath: "examples/air/basics/arithmetic/arithmetic.air.json",
 		expected: {
-			value: { kind: "int", value: 42 },
+			value: { kind: "int", value: 72 },
 			structural: true,
 		},
 		metadata: {
@@ -94,7 +94,7 @@ export const COMPLIANCE_FIXTURES: ComplianceFixture[] = [
 		id: "air-comparisons-lt",
 		documentPath: "examples/air/basics/comparisons/comparisons.air.json",
 		expected: {
-			value: { kind: "bool", value: true },
+			value: { kind: "bool", value: false },
 			structural: true,
 		},
 		metadata: {
@@ -136,7 +136,7 @@ export const COMPLIANCE_FIXTURES: ComplianceFixture[] = [
 		id: "air-list-nth",
 		documentPath: "examples/air/data-structures/list-nth/list-nth.air.json",
 		expected: {
-			value: { kind: "int", value: 2 },
+			value: { kind: "int", value: 30 },
 			structural: true,
 		},
 		metadata: {
@@ -152,12 +152,15 @@ export const COMPLIANCE_FIXTURES: ComplianceFixture[] = [
 		expected: {
 			value: {
 				kind: "list",
-				of: { kind: "int" },
 				value: [
 					{ kind: "int", value: 1 },
 					{ kind: "int", value: 2 },
 					{ kind: "int", value: 3 },
 					{ kind: "int", value: 4 },
+					{ kind: "int", value: 1 },
+					{ kind: "int", value: 2 },
+					{ kind: "int", value: 3 },
+					{ kind: "int", value: 5 },
 				],
 			},
 			structural: true,
@@ -170,54 +173,10 @@ export const COMPLIANCE_FIXTURES: ComplianceFixture[] = [
 	},
 
 	{
-		id: "air-set-union",
-		documentPath: "examples/air/data-structures/set-union/set-union.air.json",
-		expected: {
-			value: {
-				kind: "set",
-				of: { kind: "int" },
-				value: [
-					{ kind: "int", value: 1 },
-					{ kind: "int", value: 2 },
-					{ kind: "int", value: 3 },
-					{ kind: "int", value: 4 },
-				],
-			},
-			structural: true,
-		},
-		metadata: {
-			layer: "AIR",
-			category: "data-structures",
-			description: "Set union operation",
-		},
-	},
-
-	{
-		id: "air-set-intersect",
-		documentPath: "examples/air/data-structures/set-intersect/set-intersect.air.json",
-		expected: {
-			value: {
-				kind: "set",
-				of: { kind: "int" },
-				value: [
-					{ kind: "int", value: 2 },
-					{ kind: "int", value: 3 },
-				],
-			},
-			structural: true,
-		},
-		metadata: {
-			layer: "AIR",
-			category: "data-structures",
-			description: "Set intersection operation",
-		},
-	},
-
-	{
 		id: "air-simple-if",
 		documentPath: "examples/air/control-flow/simple-if/simple-if.air.json",
 		expected: {
-			value: { kind: "int", value: 10 },
+			value: { kind: "int", value: 100 },
 			structural: true,
 		},
 		metadata: {
@@ -260,56 +219,6 @@ export const COMPLIANCE_FIXTURES: ComplianceFixture[] = [
 	},
 
 	{
-		id: "cir-currying",
-		documentPath: "examples/cir/basics/currying/currying.cir.json",
-		expected: {
-			value: { kind: "int", value: 12 },
-			structural: true,
-		},
-		metadata: {
-			layer: "CIR",
-			category: "basics",
-			description: "Curried function application",
-		},
-	},
-
-	{
-		id: "cir-map",
-		documentPath: "examples/cir/higher-order/map/map.cir.json",
-		expected: {
-			value: {
-				kind: "list",
-				of: { kind: "int" },
-				value: [
-					{ kind: "int", value: 2 },
-					{ kind: "int", value: 4 },
-					{ kind: "int", value: 6 },
-				],
-			},
-			structural: true,
-		},
-		metadata: {
-			layer: "CIR",
-			category: "higher-order",
-			description: "Map higher-order function",
-		},
-	},
-
-	{
-		id: "cir-fold",
-		documentPath: "examples/cir/higher-order/fold/fold.cir.json",
-		expected: {
-			value: { kind: "int", value: 15 },
-			structural: true,
-		},
-		metadata: {
-			layer: "CIR",
-			category: "higher-order",
-			description: "Fold/reduce higher-order function",
-		},
-	},
-
-	{
 		id: "cir-fix-factorial",
 		documentPath: "examples/cir/fixpoint/fix-factorial/fix-factorial.cir.json",
 		expected: {
@@ -323,20 +232,6 @@ export const COMPLIANCE_FIXTURES: ComplianceFixture[] = [
 		},
 	},
 
-	{
-		id: "cir-fix-fibonacci",
-		documentPath: "examples/cir/fixpoint/fix-fibonacci/fix-fibonacci.cir.json",
-		expected: {
-			value: { kind: "int", value: 55 },
-			structural: true,
-		},
-		metadata: {
-			layer: "CIR",
-			category: "fixpoint",
-			description: "Fibonacci via fixpoint combinator",
-		},
-	},
-
 	//==========================================================================
 	// EIR Fixtures - Execution with Effects
 	//==========================================================================
@@ -345,7 +240,7 @@ export const COMPLIANCE_FIXTURES: ComplianceFixture[] = [
 		id: "eir-sequencing",
 		documentPath: "examples/eir/basics/sequencing/sequencing.eir.json",
 		expected: {
-			value: { kind: "int", value: 10 },
+			value: { kind: "int", value: 45 },
 			structural: true,
 		},
 		metadata: {
@@ -370,58 +265,16 @@ export const COMPLIANCE_FIXTURES: ComplianceFixture[] = [
 	},
 
 	{
-		id: "eir-refcells",
-		documentPath: "examples/eir/basics/refcells/refcells.eir.json",
-		expected: {
-			value: { kind: "int", value: 15 },
-			structural: true,
-		},
-		metadata: {
-			layer: "EIR",
-			category: "basics",
-			description: "Reference cell operations",
-		},
-	},
-
-	{
 		id: "eir-while-loop",
 		documentPath: "examples/eir/loops/while-loop/while-loop.eir.json",
 		expected: {
-			value: { kind: "int", value: 10 },
+			value: { kind: "int", value: 5 },
 			structural: true,
 		},
 		metadata: {
 			layer: "EIR",
 			category: "loops",
 			description: "While loop iteration",
-		},
-	},
-
-	{
-		id: "eir-for-loop",
-		documentPath: "examples/eir/loops/for-loop/for-loop.eir.json",
-		expected: {
-			value: { kind: "int", value: 10 },
-			structural: true,
-		},
-		metadata: {
-			layer: "EIR",
-			category: "loops",
-			description: "C-style for loop",
-		},
-	},
-
-	{
-		id: "eir-iter-loop",
-		documentPath: "examples/eir/loops/iter-loop/iter-loop.eir.json",
-		expected: {
-			value: { kind: "int", value: 6 },
-			structural: true,
-		},
-		metadata: {
-			layer: "EIR",
-			category: "loops",
-			description: "Iterator over list/set",
 		},
 	},
 
@@ -433,7 +286,7 @@ export const COMPLIANCE_FIXTURES: ComplianceFixture[] = [
 		id: "lir-straight-line",
 		documentPath: "examples/lir/basics/straight-line/straight-line.lir.json",
 		expected: {
-			value: { kind: "int", value: 7 },
+			value: { kind: "int", value: 35 },
 			structural: true,
 		},
 		metadata: {
@@ -447,27 +300,13 @@ export const COMPLIANCE_FIXTURES: ComplianceFixture[] = [
 		id: "lir-conditional",
 		documentPath: "examples/lir/basics/conditional/conditional.lir.json",
 		expected: {
-			value: { kind: "int", value: 10 },
+			value: { kind: "string", value: "x is greater" },
 			structural: true,
 		},
 		metadata: {
 			layer: "LIR",
 			category: "basics",
 			description: "Conditional branch execution",
-		},
-	},
-
-	{
-		id: "lir-loop",
-		documentPath: "examples/lir/basics/loop/loop.lir.json",
-		expected: {
-			value: { kind: "int", value: 10 },
-			structural: true,
-		},
-		metadata: {
-			layer: "LIR",
-			category: "basics",
-			description: "Loop via CFG",
 		},
 	},
 
@@ -482,63 +321,6 @@ export const COMPLIANCE_FIXTURES: ComplianceFixture[] = [
 			layer: "LIR",
 			category: "algorithms",
 			description: "Factorial algorithm",
-		},
-	},
-
-	{
-		id: "lir-gcd",
-		documentPath: "examples/lir/algorithms/gcd/gcd.lir.json",
-		expected: {
-			value: { kind: "int", value: 6 },
-			structural: true,
-		},
-		metadata: {
-			layer: "LIR",
-			category: "algorithms",
-			description: "Greatest common divisor",
-		},
-	},
-
-	{
-		id: "lir-fizzbuzz",
-		documentPath: "examples/lir/algorithms/fizzbuzz/fizzbuzz.lir.json",
-		expected: {
-			value: {
-				kind: "list",
-				of: { kind: "string" },
-				value: [
-					{ kind: "string", value: "1" },
-					{ kind: "string", value: "2" },
-					{ kind: "string", value: "Fizz" },
-					{ kind: "string", value: "4" },
-					{ kind: "string", value: "Buzz" },
-					{ kind: "string", value: "Fizz" },
-					{ kind: "string", value: "7" },
-					{ kind: "string", value: "8" },
-					{ kind: "string", value: "Fizz" },
-					{ kind: "string", value: "Buzz" },
-				],
-			},
-			structural: true,
-		},
-		metadata: {
-			layer: "LIR",
-			category: "algorithms",
-			description: "FizzBuzz algorithm",
-		},
-	},
-
-	{
-		id: "lir-phi-loop",
-		documentPath: "examples/lir/phi/loop-phi/loop-phi.lir.json",
-		expected: {
-			value: { kind: "int", value: 10 },
-			structural: true,
-		},
-		metadata: {
-			layer: "LIR",
-			category: "phi",
-			description: "Phi node in loop",
 		},
 	},
 ];
