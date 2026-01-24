@@ -916,6 +916,10 @@ describe("Edge Cases", () => {
       ]);
 
       assert.strictEqual(result, "timeout");
+
+      // Dispose scheduler to stop the polling loop
+      // This prevents the promise from hanging forever after test completes
+      scheduler.dispose();
     });
   });
 

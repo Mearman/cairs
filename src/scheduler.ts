@@ -214,6 +214,7 @@ export class DeterministicScheduler implements TaskScheduler {
 	private currentTaskRunning = false; // Track if a task is currently running (for sequential mode)
 	private breadthFirstRunning = false; // Track if breadth-first execution is in progress
 	private depthFirstRunning = false; // Track if depth-first execution is in progress
+	private _disposed = false; // Track if scheduler has been disposed (stops polling loops)
 
 	constructor(
 		mode: SchedulerMode = "parallel",
@@ -247,6 +248,15 @@ export class DeterministicScheduler implements TaskScheduler {
 
 	getMode(): SchedulerMode {
 		return this.mode;
+	}
+
+	/**
+	 * Dispose of the scheduler and stop all pending polling loops.
+	 * This should be called when done with the scheduler to prevent
+	 * hanging promises that keep the event loop alive.
+	 */
+	dispose(): void {
+		this._disposed = true;
 	}
 
 	spawn(taskId: string, fn: () => Promise<Value>): void {
@@ -323,13 +333,25 @@ export class DeterministicScheduler implements TaskScheduler {
 				// Task not in queue and not completed - wait a bit and try again
 				// This handles the case where another await() is currently executing the task
 				if (!this.completedTasks.has(taskId)) {
-					await new Promise((resolve) => setImmediate(resolve));
+					// Check if scheduler was disposed (e.g., test completed)
+					if (this._disposed) {
+						throw new Error(`Task ${taskId} not found (scheduler disposed)`);
+					}
+					// Use setTimeout instead of setImmediate to avoid flooding event loop
+					// with microtasks, which causes issues when multiple schedulers poll
+					// concurrently (e.g., during parallel test execution)
+					await new Promise((resolve) => setTimeout(resolve, 10));
 				}
 			}
 		} else {
 			// For sequential/breadth-first/depth-first, wait for background execution
+			// Use setTimeout to avoid flooding event loop with microtasks
 			while (!this.completedTasks.has(taskId)) {
-				await new Promise((resolve) => setImmediate(resolve));
+				// Check if scheduler was disposed (e.g., test completed)
+				if (this._disposed) {
+					throw new Error(`Task ${taskId} not found (scheduler disposed)`);
+				}
+				await new Promise((resolve) => setTimeout(resolve, 10));
 			}
 		}
 
