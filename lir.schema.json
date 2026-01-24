@@ -31,6 +31,12 @@
       "type": "string",
       "pattern": "^[A-Za-z][A-Za-z0-9_\\-]*$"
     },
+    "idOrExprCir": {
+      "oneOf": [
+        { "$ref": "#/$defs/id" },
+        { "$ref": "https://raw.githubusercontent.com/Mearman/SPIRAL/refs/heads/main/cir.schema.json#/$defs/exprCir" }
+      ]
+    },
     "block": {
       "type": "object",
       "additionalProperties": false,
@@ -108,7 +114,7 @@
         "args": {
           "type": "array",
           "items": {
-            "$ref": "#/$defs/id"
+            "$ref": "#/$defs/idOrExprCir"
           }
         }
       }
@@ -135,7 +141,7 @@
         "args": {
           "type": "array",
           "items": {
-            "$ref": "#/$defs/id"
+            "$ref": "#/$defs/idOrExprCir"
           }
         }
       }

@@ -30,6 +30,12 @@
       "type": "string",
       "pattern": "^[A-Za-z][A-Za-z0-9_\\-]*$"
     },
+    "idOrExprPir": {
+      "oneOf": [
+        { "$ref": "#/$defs/id" },
+        { "$ref": "#/$defs/exprPir" }
+      ]
+    },
     "node": {
       "type": "object",
       "additionalProperties": false,
@@ -156,12 +162,12 @@
           "$ref": "#/$defs/id"
         },
         "timeout": {
-          "$ref": "#/$defs/id",
-          "description": "Timeout in milliseconds (node reference to int literal)"
+          "$ref": "#/$defs/idOrExprPir",
+          "description": "Timeout in milliseconds (node reference to int literal, or inline expression)"
         },
         "fallback": {
-          "$ref": "#/$defs/id",
-          "description": "Fallback value on timeout (node reference)"
+          "$ref": "#/$defs/idOrExprPir",
+          "description": "Fallback value on timeout (node reference, or inline expression)"
         },
         "returnIndex": {
           "type": "boolean",
@@ -182,7 +188,7 @@
           "enum": ["mpsc", "spsc", "mpmc", "broadcast"]
         },
         "bufferSize": {
-          "$ref": "#/$defs/id"
+          "$ref": "#/$defs/idOrExprPir"
         }
       }
     },
@@ -198,7 +204,7 @@
           "$ref": "#/$defs/id"
         },
         "value": {
-          "$ref": "#/$defs/id"
+          "$ref": "#/$defs/idOrExprPir"
         }
       }
     },
@@ -231,12 +237,12 @@
           }
         },
         "timeout": {
-          "$ref": "#/$defs/id",
-          "description": "Timeout in milliseconds (node reference to int literal)"
+          "$ref": "#/$defs/idOrExprPir",
+          "description": "Timeout in milliseconds (node reference to int literal, or inline expression)"
         },
         "fallback": {
-          "$ref": "#/$defs/id",
-          "description": "Fallback value on timeout (node reference)"
+          "$ref": "#/$defs/idOrExprPir",
+          "description": "Fallback value on timeout (node reference, or inline expression)"
         },
         "returnIndex": {
           "type": "boolean",

@@ -25,6 +25,12 @@
       "type": "string",
       "pattern": "^[A-Za-z][A-Za-z0-9_\\-]*$"
     },
+    "idOrExprEir": {
+      "oneOf": [
+        { "$ref": "#/$defs/id" },
+        { "$ref": "#/$defs/exprEir" }
+      ]
+    },
     "node": {
       "type": "object",
       "additionalProperties": false,
@@ -107,10 +113,10 @@
           "const": "seq"
         },
         "first": {
-          "$ref": "#/$defs/id"
+          "$ref": "#/$defs/idOrExprEir"
         },
         "then": {
-          "$ref": "#/$defs/id"
+          "$ref": "#/$defs/idOrExprEir"
         }
       }
     },
@@ -126,7 +132,7 @@
           "$ref": "#/$defs/id"
         },
         "value": {
-          "$ref": "#/$defs/id"
+          "$ref": "#/$defs/idOrExprEir"
         }
       }
     },
@@ -162,10 +168,10 @@
           "const": "while"
         },
         "cond": {
-          "$ref": "#/$defs/id"
+          "$ref": "#/$defs/idOrExprEir"
         },
         "body": {
-          "$ref": "#/$defs/id"
+          "$ref": "#/$defs/idOrExprEir"
         }
       }
     },
@@ -181,16 +187,16 @@
           "$ref": "#/$defs/id"
         },
         "init": {
-          "$ref": "#/$defs/id"
+          "$ref": "#/$defs/idOrExprEir"
         },
         "cond": {
-          "$ref": "#/$defs/id"
+          "$ref": "#/$defs/idOrExprEir"
         },
         "update": {
-          "$ref": "#/$defs/id"
+          "$ref": "#/$defs/idOrExprEir"
         },
         "body": {
-          "$ref": "#/$defs/id"
+          "$ref": "#/$defs/idOrExprEir"
         }
       }
     },
@@ -206,10 +212,10 @@
           "$ref": "#/$defs/id"
         },
         "iter": {
-          "$ref": "#/$defs/id"
+          "$ref": "#/$defs/idOrExprEir"
         },
         "body": {
-          "$ref": "#/$defs/id"
+          "$ref": "#/$defs/idOrExprEir"
         }
       }
     },
@@ -227,7 +233,7 @@
         "args": {
           "type": "array",
           "items": {
-            "$ref": "#/$defs/id"
+            "$ref": "#/$defs/idOrExprEir"
           },
           "default": []
         }
@@ -255,16 +261,16 @@
           "const": "try"
         },
         "tryBody": {
-          "$ref": "#/$defs/id"
+          "$ref": "#/$defs/idOrExprEir"
         },
         "catchParam": {
           "$ref": "#/$defs/id"
         },
         "catchBody": {
-          "$ref": "#/$defs/id"
+          "$ref": "#/$defs/idOrExprEir"
         },
         "fallback": {
-          "$ref": "#/$defs/id"
+          "$ref": "#/$defs/idOrExprEir"
         }
       }
     }
