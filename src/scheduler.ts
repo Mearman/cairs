@@ -211,6 +211,9 @@ export class DeterministicScheduler implements TaskScheduler {
 	private readonly globalMaxSteps: number;
 	private _currentTaskId = "main";
 	private mode: SchedulerMode;
+	private currentTaskRunning = false; // Track if a task is currently running (for sequential mode)
+	private breadthFirstRunning = false; // Track if breadth-first execution is in progress
+	private depthFirstRunning = false; // Track if depth-first execution is in progress
 
 	constructor(
 		mode: SchedulerMode = "parallel",
@@ -263,16 +266,16 @@ export class DeterministicScheduler implements TaskScheduler {
 			reject: taskReject,
 		});
 
-		// In sequential mode, start executing the first task in the queue
-		if (this.mode === "sequential") {
+		// In sequential mode, start executing tasks if none is currently running
+		if (this.mode === "sequential" && !this.currentTaskRunning) {
 			this.runNextTask().catch(() => {
 				// Error already handled in runNextTask
 			});
-		} else if (this.mode === "breadth-first") {
+		} else if (this.mode === "breadth-first" && !this.breadthFirstRunning) {
 			this.runBreadthFirst().catch(() => {
 				// Error already handled in runBreadthFirst
 			});
-		} else if (this.mode === "depth-first") {
+		} else if (this.mode === "depth-first" && !this.depthFirstRunning) {
 			this.runDepthFirst().catch(() => {
 				// Error already handled in runDepthFirst
 			});
@@ -281,36 +284,51 @@ export class DeterministicScheduler implements TaskScheduler {
 	}
 
 	async await(taskId: string): Promise<Value> {
-		// If task is not in completedTasks, poll for it
-		// This handles the case where runNextTask() is executing the task
-		while (!this.completedTasks.has(taskId)) {
-			// Check if task is in queue - if so, execute it
-			const taskIndex = this.taskQueue.findIndex((t) => t.id === taskId);
-			if (taskIndex !== -1) {
-				const task = this.taskQueue[taskIndex];
-				if (!task) {
-					throw new Error(`Task at index ${taskIndex} not found in queue`);
+		// If already completed, return result
+		if (this.completedTasks.has(taskId)) {
+			const result = this.completedTasks.get(taskId);
+			if (!result) {
+				throw new Error(`Task ${taskId} not found in completed tasks`);
+			}
+			return result;
+		}
+
+		// In sequential/breadth-first/depth-first modes, wait for background execution
+		// In parallel mode, execute the task directly
+		if (this.mode === "parallel") {
+			while (!this.completedTasks.has(taskId)) {
+				const taskIndex = this.taskQueue.findIndex((t) => t.id === taskId);
+				if (taskIndex !== -1) {
+					const task = this.taskQueue[taskIndex];
+					if (!task) {
+						throw new Error(`Task at index ${taskIndex} not found in queue`);
+					}
+
+					// Remove from queue so we don't execute it twice
+					this.taskQueue.splice(taskIndex, 1);
+
+					// Execute the task and return the result
+					this._currentTaskId = taskId;
+					try {
+						const result = await task.fn();
+						this.completedTasks.set(taskId, result);
+						return result;
+					} catch (error) {
+						throw error;
+					} finally {
+						this._currentTaskId = "main";
+					}
 				}
 
-				// Remove from queue so we don't execute it twice
-				this.taskQueue.splice(taskIndex, 1);
-
-				// Execute the task and return the result
-				this._currentTaskId = taskId;
-				try {
-					const result = await task.fn();
-					this.completedTasks.set(taskId, result);
-					return result;
-				} catch (error) {
-					throw error;
-				} finally {
-					this._currentTaskId = "main";
+				// Task not in queue and not completed - wait a bit and try again
+				// This handles the case where another await() is currently executing the task
+				if (!this.completedTasks.has(taskId)) {
+					await new Promise((resolve) => setImmediate(resolve));
 				}
 			}
-
-			// Task not in queue and not completed - wait a bit and try again
-			// This handles the case where runNextTask() is currently executing the task
-			if (!this.completedTasks.has(taskId)) {
+		} else {
+			// For sequential/breadth-first/depth-first, wait for background execution
+			while (!this.completedTasks.has(taskId)) {
 				await new Promise((resolve) => setImmediate(resolve));
 			}
 		}
@@ -344,11 +362,16 @@ export class DeterministicScheduler implements TaskScheduler {
 
 	private async runNextTask(): Promise<void> {
 		if (this.taskQueue.length === 0) {
+			this.currentTaskRunning = false;
 			return;
 		}
 
+		// Set flag at the start to prevent concurrent execution
+		this.currentTaskRunning = true;
+
 		const task = this.taskQueue.shift();
 		if (!task) {
+			this.currentTaskRunning = false;
 			throw new Error("No task available in queue");
 		}
 		this._currentTaskId = task.id;
@@ -360,6 +383,14 @@ export class DeterministicScheduler implements TaskScheduler {
 		} catch (error) {
 			task.reject(error as Error);
 		}
+
+		// Continue with next task in queue (sequential mode)
+		if (this.taskQueue.length > 0) {
+			await this.runNextTask();
+		} else {
+			// Only clear flag when all tasks are done
+			this.currentTaskRunning = false;
+		}
 	}
 
 	/**
@@ -368,8 +399,11 @@ export class DeterministicScheduler implements TaskScheduler {
 	 */
 	private async runBreadthFirst(): Promise<void> {
 		if (this.taskQueue.length === 0) {
+			this.breadthFirstRunning = false;
 			return;
 		}
+
+		this.breadthFirstRunning = true;
 
 		// Take a snapshot of the current queue (this batch)
 		const currentBatch = [...this.taskQueue];
@@ -392,6 +426,10 @@ export class DeterministicScheduler implements TaskScheduler {
 		// If new tasks were spawned during execution, continue with next batch
 		if (this.taskQueue.length > 0) {
 			await this.runBreadthFirst();
+		} else {
+			// Reset globalSteps after all batches complete
+			this._globalSteps = 0;
+			this.breadthFirstRunning = false;
 		}
 	}
 
@@ -400,24 +438,34 @@ export class DeterministicScheduler implements TaskScheduler {
 	 * Each task runs to completion before the next one starts
 	 */
 	private async runDepthFirst(): Promise<void> {
-		if (this.taskQueue.length === 0) {
-			return;
-		}
+		this.depthFirstRunning = true;
 
-		// Execute tasks in LIFO order (last spawned = first executed)
-		while (this.taskQueue.length > 0) {
-			const task = this.taskQueue.pop(); // pop() removes from end (LIFO)
-			if (!task) {
-				throw new Error("No task available in queue");
+		try {
+			// Execute tasks in LIFO order (last spawned = first executed)
+			while (this.taskQueue.length > 0) {
+				const task = this.taskQueue.pop(); // pop() removes from end (LIFO)
+				if (!task) {
+					throw new Error("No task available in queue");
+				}
+				this._currentTaskId = task.id;
+
+				try {
+					const result = await task.fn();
+					this.completedTasks.set(task.id, result);
+					task.resolve(result);
+				} catch (error) {
+					task.reject(error as Error);
+				}
 			}
-			this._currentTaskId = task.id;
 
-			try {
-				const result = await task.fn();
-				this.completedTasks.set(task.id, result);
-				task.resolve(result);
-			} catch (error) {
-				task.reject(error as Error);
+			// Continue processing if new tasks were added during execution
+			if (this.taskQueue.length > 0) {
+				await this.runDepthFirst();
+			}
+		} finally {
+			// Only clear flag when we're the top-level call and queue is empty
+			if (this.taskQueue.length === 0) {
+				this.depthFirstRunning = false;
 			}
 		}
 	}
@@ -429,8 +477,8 @@ export class DeterministicScheduler implements TaskScheduler {
 
 export class AsyncBarrier {
 	private count: number;
-	private resolve: (() => void) | null = null;
-	private promise: Promise<void> = Promise.resolve();
+	private waiting: Array<() => void> = [];
+	private releaseInProgress = false;
 
 	constructor(count: number) {
 		if (count <= 0) {
@@ -441,14 +489,24 @@ export class AsyncBarrier {
 
 	async wait(): Promise<void> {
 		this.count--;
+
 		if (this.count === 0) {
-			// Last task to arrive releases all
-			if (this.resolve) {
-				this.resolve();
+			// Last task to arrive - release all waiting tasks in FIFO order
+			if (!this.releaseInProgress) {
+				this.releaseInProgress = true;
+				// Release all waiters in FIFO order
+				const waiters = [...this.waiting];
+				this.waiting = [];
+				for (const waiter of waiters) {
+					waiter();
+				}
+				this.releaseInProgress = false;
 			}
-		} else if (this.count > 0) {
-			// Wait for all tasks to arrive
-			await this.promise;
+		} else {
+			// Wait for the last task to arrive
+			return new Promise<void>((resolve) => {
+				this.waiting.push(resolve);
+			});
 		}
 	}
 
@@ -457,10 +515,8 @@ export class AsyncBarrier {
 			throw new Error("Barrier count must be positive");
 		}
 		this.count = count;
-		this.resolve = null;
-		this.promise = new Promise<void>((r) => {
-			this.resolve = r;
-		});
+		this.waiting = [];
+		this.releaseInProgress = false;
 	}
 }
 
