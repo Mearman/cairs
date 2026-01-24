@@ -771,7 +771,7 @@ function evalExprWithNodeMap(
 	}
 
 	if (expr.kind === "callExpr") {
-		const callExpr = expr as { kind: "callExpr"; fn: string; args: string[] };
+		const callExpr = expr as { kind: "callExpr"; fn: string; args: (string | Expr)[] };
 		// Look up function: first in nodeValues, then in environment
 		let fnValue: Value | undefined = nodeValues.get(callExpr.fn);
 		fnValue ??= lookupValue(env, callExpr.fn);
@@ -798,22 +798,28 @@ function evalExprWithNodeMap(
 
 		// Get argument values
 		const argValues: Value[] = [];
-		for (const argId of callExpr.args) {
-			let argValue = nodeValues.get(argId);
-			argValue ??= lookupValue(env, argId);
-			// If not in nodeValues or env, try evaluating the node with current env
-			if (!argValue) {
-				const argNode = nodeMap.get(argId);
-				if (argNode) {
-					if (isBlockNode(argNode)) {
-						argValue = evaluateBlockNode(argNode, registry, nodeMap, nodeValues, env, options);
-					} else {
-						argValue = evalExprWithNodeMap(registry, defs, argNode.expr, nodeMap, nodeValues, env, options);
+		for (const arg of callExpr.args) {
+			let argValue: Value | undefined;
+			if (typeof arg === "string") {
+				// Node ID reference
+				argValue = nodeValues.get(arg) ?? lookupValue(env, arg);
+				// If not in nodeValues or env, try evaluating the node with current env
+				if (!argValue) {
+					const argNode = nodeMap.get(arg);
+					if (argNode) {
+						if (isBlockNode(argNode)) {
+							argValue = evaluateBlockNode(argNode, registry, nodeMap, nodeValues, env, options);
+						} else {
+							argValue = evalExprWithNodeMap(registry, defs, argNode.expr, nodeMap, nodeValues, env, options);
+						}
 					}
 				}
-			}
-			if (!argValue) {
-				return errorVal(ErrorCodes.DomainError, "Argument not found: " + argId);
+				if (!argValue) {
+					return errorVal(ErrorCodes.DomainError, "Argument not found: " + arg);
+				}
+			} else {
+				// Inline expression - evaluate directly
+				argValue = evalExprWithNodeMap(registry, defs, arg, nodeMap, nodeValues, env, options);
 			}
 			if (isError(argValue)) {
 				return argValue;
@@ -905,25 +911,31 @@ function evalExprWithNodeMap(
 	}
 
 	if (expr.kind === "call") {
-		const callExpr = expr as { kind: "call"; ns: string; name: string; args: string[] };
+		const callExpr = expr as { kind: "call"; ns: string; name: string; args: (string | Expr)[] };
 		// Get argument values
 		const argValues: Value[] = [];
-		for (const argId of callExpr.args) {
-			let argValue = nodeValues.get(argId);
-			argValue ??= lookupValue(env, argId);
-			// If not found, try evaluating the arg node (it might be a bound node like var)
-			if (!argValue) {
-				const argNode = nodeMap.get(argId);
-				if (argNode) {
-					if (isBlockNode(argNode)) {
-						argValue = evaluateBlockNode(argNode, registry, nodeMap, nodeValues, env, options);
-					} else {
-						argValue = evalExprWithNodeMap(registry, defs, argNode.expr, nodeMap, nodeValues, env, options);
+		for (const arg of callExpr.args) {
+			let argValue: Value | undefined;
+			if (typeof arg === "string") {
+				// Node ID reference
+				argValue = nodeValues.get(arg) ?? lookupValue(env, arg);
+				// If not found, try evaluating the arg node (it might be a bound node like var)
+				if (!argValue) {
+					const argNode = nodeMap.get(arg);
+					if (argNode) {
+						if (isBlockNode(argNode)) {
+							argValue = evaluateBlockNode(argNode, registry, nodeMap, nodeValues, env, options);
+						} else {
+							argValue = evalExprWithNodeMap(registry, defs, argNode.expr, nodeMap, nodeValues, env, options);
+						}
 					}
 				}
-			}
-			if (!argValue) {
-				return errorVal(ErrorCodes.DomainError, "Argument not found: " + argId);
+				if (!argValue) {
+					return errorVal(ErrorCodes.DomainError, "Argument not found: " + arg);
+				}
+			} else {
+				// Inline expression - evaluate directly
+				argValue = evalExprWithNodeMap(registry, defs, arg, nodeMap, nodeValues, env, options);
 			}
 			if (isError(argValue)) {
 				return argValue;
@@ -1776,17 +1788,24 @@ function evalNode(
 			if ("ns" in callExpr && "name" in callExpr && "args" in callExpr) {
 				// Get argument values from the def environment (for parameters) or nodeValues (for node refs)
 				const callArgValues: Value[] = [];
-				for (const argId of callExpr.args) {
-					let argValue = lookupValue(defEnv, argId);
-					argValue ??= nodeValues.get(argId);
-					if (!argValue) {
-						return {
-							value: errorVal(
-								ErrorCodes.DomainError,
-								"Argument not found: " + argId,
-							),
-							env,
-						};
+				for (const arg of callExpr.args) {
+					let argValue: Value | undefined;
+					if (typeof arg === "string") {
+						// Node ID reference
+						argValue = lookupValue(defEnv, arg);
+						argValue ??= nodeValues.get(arg);
+						if (!argValue) {
+							return {
+								value: errorVal(
+									ErrorCodes.DomainError,
+									"Argument not found: " + arg,
+								),
+								env,
+							};
+						}
+					} else {
+						// Inline expression - evaluate directly
+						argValue = evalExprInline(arg, defEnv, evaluator.registry, evaluator.defs, nodeValues);
 					}
 					if (isError(argValue)) {
 						return { value: argValue, env };
@@ -2407,6 +2426,28 @@ function evalEIRNode(
 }
 
 /**
+ * Evaluate an inline expression directly (not as a node reference).
+ * Used when an expression field contains an inline expression instead of a node ID.
+ */
+function evalExprInline(
+	expr: Expr,
+	env: ValueEnv,
+	registry: OperatorRegistry,
+	defs: Defs,
+	nodeValues: Map<string, Value>,
+): Value {
+	// Create a temporary node for the inline expression
+	const tempNode: AirHybridNode = {
+		id: "__inline__",
+		expr,
+	};
+	const tempNodeMap = new Map<string, AirHybridNode>();
+	tempNodeMap.set("__inline__", tempNode);
+
+	return evalExprWithNodeMap(registry, defs, expr, tempNodeMap, nodeValues, env);
+}
+
+/**
  * Evaluate EIR-specific expressions.
  */
 function evalEIRExpr(
@@ -2423,32 +2464,40 @@ function evalEIRExpr(
 
 	switch (kind) {
 	case "seq": {
-		const e = expr as unknown as { first: string; then: string };
+		const e = expr as unknown as { first: string | Expr; then: string | Expr };
 		// E-Seq: Evaluate first, then then, return result of then
-		const firstNode = nodeMap.get(e.first);
-		if (!firstNode) {
-			return {
-				value: errorVal(
-					ErrorCodes.DomainError,
-					"First node not found: " + e.first,
-				),
-				env: state.env,
-				refCells: state.refCells,
-			};
-		}
 
-		const firstResult = evalEIRNode(
-			new Evaluator(registry, defs),
-			firstNode,
-			nodeMap,
-			nodeValues,
-			state,
-			registry,
-			effectRegistry,
-			defs,
-			options,
-		);
+		// Helper to evaluate a node reference or inline expression
+		const evalSeqPart = (part: string | Expr): EIRNodeEvalResult => {
+			if (typeof part === "string") {
+				// Node ID reference
+				const partNode = nodeMap.get(part);
+				if (!partNode) {
+					return {
+						value: errorVal(ErrorCodes.DomainError, "Node not found: " + part),
+						env: state.env,
+						refCells: state.refCells,
+					};
+				}
+				return evalEIRNode(
+					new Evaluator(registry, defs),
+					partNode,
+					nodeMap,
+					nodeValues,
+					state,
+					registry,
+					effectRegistry,
+					defs,
+					options,
+				);
+			} else {
+				// Inline expression - evaluate directly
+				const value = evalExprInline(part, state.env, registry, defs, nodeValues);
+				return { value, env: state.env, refCells: state.refCells };
+			}
+		};
 
+		const firstResult = evalSeqPart(e.first);
 		if (isError(firstResult.value)) {
 			return { value: firstResult.value, env: state.env, refCells: state.refCells };
 		}
@@ -2458,29 +2507,7 @@ function evalEIRExpr(
 			state.refCells = firstResult.refCells;
 		}
 
-		const thenNode = nodeMap.get(e.then);
-		if (!thenNode) {
-			return {
-				value: errorVal(
-					ErrorCodes.DomainError,
-					"Then node not found: " + e.then,
-				),
-				env: state.env,
-				refCells: state.refCells,
-			};
-		}
-
-		const thenResult = evalEIRNode(
-			new Evaluator(registry, defs),
-			thenNode,
-			nodeMap,
-			nodeValues,
-			state,
-			registry,
-			effectRegistry,
-			defs,
-			options,
-		);
+		const thenResult = evalSeqPart(e.then);
 
 		if (thenResult.refCells) {
 			state.refCells = thenResult.refCells;
@@ -2494,45 +2521,53 @@ function evalEIRExpr(
 	}
 
 	case "assign": {
-		const e = expr as unknown as { target: string; value: string };
+		const e = expr as unknown as { target: string; value: string | Expr };
 		// E-Assign: Evaluate value and store in environment
-		const valueNode = nodeMap.get(e.value);
-		if (!valueNode) {
-			return {
-				value: errorVal(
-					ErrorCodes.DomainError,
-					"Value node not found: " + e.value,
-				),
-				env: state.env,
-				refCells: state.refCells,
-			};
+
+		let valueValue: Value;
+		if (typeof e.value === "string") {
+			// Node ID reference
+			const valueNode = nodeMap.get(e.value);
+			if (!valueNode) {
+				return {
+					value: errorVal(ErrorCodes.DomainError, "Value node not found: " + e.value),
+					env: state.env,
+					refCells: state.refCells,
+				};
+			}
+
+			// Clear the cached value of the value node to force re-evaluation
+			// This is important for loops where the value node references variables that change
+			nodeValues.delete(e.value);
+
+			const valueResult = evalEIRNode(
+				new Evaluator(registry, defs),
+				valueNode,
+				nodeMap,
+				nodeValues,
+				state,
+				registry,
+				effectRegistry,
+				defs,
+				options,
+			);
+			valueValue = valueResult.value;
+
+			if (!isError(valueValue)) {
+				// Store the result in nodeValues for future reference
+				nodeValues.set(e.value, valueValue);
+			}
+		} else {
+			// Inline expression - evaluate directly
+			valueValue = evalExprInline(e.value, state.env, registry, defs, nodeValues);
 		}
 
-		// Clear the cached value of the value node to force re-evaluation
-		// This is important for loops where the value node references variables that change
-		nodeValues.delete(e.value);
-
-		const valueResult = evalEIRNode(
-			new Evaluator(registry, defs),
-			valueNode,
-			nodeMap,
-			nodeValues,
-			state,
-			registry,
-			effectRegistry,
-			defs,
-			options,
-		);
-
-		if (isError(valueResult.value)) {
-			return { value: valueResult.value, env: state.env, refCells: state.refCells };
+		if (isError(valueValue)) {
+			return { value: valueValue, env: state.env, refCells: state.refCells };
 		}
-
-		// Store the result in nodeValues for future reference
-		nodeValues.set(e.value, valueResult.value);
 
 		// Extend environment with the binding
-		const newEnv = extendValueEnv(state.env, e.target, valueResult.value);
+		const newEnv = extendValueEnv(state.env, e.target, valueValue);
 		state.env = newEnv;
 
 		return {
@@ -2543,7 +2578,7 @@ function evalEIRExpr(
 	}
 
 	case "while": {
-		const e = expr as unknown as { cond: string; body: string };
+		const e = expr as unknown as { cond: string | Expr; body: string | Expr };
 		// E-While: Loop while condition is true
 		let loopResult: Value = voidVal();
 
@@ -2558,77 +2593,90 @@ function evalEIRExpr(
 			}
 
 			// Evaluate condition
-			const condNode = nodeMap.get(e.cond);
-			if (!condNode) {
-				return {
-					value: errorVal(
-						ErrorCodes.DomainError,
-						"Condition node not found: " + e.cond,
-					),
-					env: state.env,
-					refCells: state.refCells,
-				};
+			let condValue: Value;
+			if (typeof e.cond === "string") {
+				// Node ID reference
+				const condNode = nodeMap.get(e.cond);
+				if (!condNode) {
+					return {
+						value: errorVal(ErrorCodes.DomainError, "Condition node not found: " + e.cond),
+						env: state.env,
+						refCells: state.refCells,
+					};
+				}
+
+				// Clear condition node cache to force re-evaluation
+				nodeValues.delete(e.cond);
+
+				const condResult = evalEIRNode(
+					new Evaluator(registry, defs),
+					condNode,
+					nodeMap,
+					nodeValues,
+					state,
+					registry,
+					effectRegistry,
+					defs,
+					options,
+				);
+				condValue = condResult.value;
+			} else {
+				// Inline expression
+				condValue = evalExprInline(e.cond, state.env, registry, defs, nodeValues);
 			}
 
-			// Clear condition node cache to force re-evaluation
-			nodeValues.delete(e.cond);
-
-			const condResult = evalEIRNode(
-				new Evaluator(registry, defs),
-				condNode,
-				nodeMap,
-				nodeValues,
-				state,
-				registry,
-				effectRegistry,
-				defs,
-				options,
-			);
-
-			if (isError(condResult.value)) {
-				return { value: condResult.value, env: state.env, refCells: state.refCells };
+			if (isError(condValue)) {
+				return { value: condValue, env: state.env, refCells: state.refCells };
 			}
 
 			// Check if condition is false - exit loop
-			if (condResult.value.kind !== "bool" || !condResult.value.value) {
+			if (condValue.kind !== "bool" || !condValue.value) {
 				break;
 			}
 
 			// Evaluate body
-			const bodyNode = nodeMap.get(e.body);
-			if (!bodyNode) {
-				return {
-					value: errorVal(
-						ErrorCodes.DomainError,
-						"Body node not found: " + e.body,
-					),
-					env: state.env,
-					refCells: state.refCells,
-				};
-			}
+			let bodyValue: Value;
+			if (typeof e.body === "string") {
+				// Node ID reference
+				const bodyNode = nodeMap.get(e.body);
+				if (!bodyNode) {
+					return {
+						value: errorVal(ErrorCodes.DomainError, "Body node not found: " + e.body),
+						env: state.env,
+						refCells: state.refCells,
+					};
+				}
 
-			const bodyResult = evalEIRNode(
-				new Evaluator(registry, defs),
-				bodyNode,
-				nodeMap,
-				nodeValues,
-				state,
-				registry,
-				effectRegistry,
-				defs,
-				options,
-			);
+				const bodyResult = evalEIRNode(
+					new Evaluator(registry, defs),
+					bodyNode,
+					nodeMap,
+					nodeValues,
+					state,
+					registry,
+					effectRegistry,
+					defs,
+					options,
+				);
 
-			if (isError(bodyResult.value)) {
-				return { value: bodyResult.value, env: state.env, refCells: state.refCells };
-			}
+				if (isError(bodyResult.value)) {
+					return { value: bodyResult.value, env: state.env, refCells: state.refCells };
+				}
 
-			loopResult = bodyResult.value;
-			if (bodyResult.refCells) {
-				state.refCells = bodyResult.refCells;
-			}
-			if (bodyResult.env !== state.env) {
-				state.env = bodyResult.env;
+				loopResult = bodyResult.value;
+				if (bodyResult.refCells) {
+					state.refCells = bodyResult.refCells;
+				}
+				if (bodyResult.env !== state.env) {
+					state.env = bodyResult.env;
+				}
+			} else {
+				// Inline expression
+				bodyValue = evalExprInline(e.body, state.env, registry, defs, nodeValues);
+				if (isError(bodyValue)) {
+					return { value: bodyValue, env: state.env, refCells: state.refCells };
+				}
+				loopResult = bodyValue;
 			}
 		}
 
@@ -2642,43 +2690,52 @@ function evalEIRExpr(
 	case "for": {
 		const e = expr as unknown as {
 				var: string;
-				init: string;
-				cond: string;
-				update: string;
-				body: string;
+				init: string | Expr;
+				cond: string | Expr;
+				update: string | Expr;
+				body: string | Expr;
 			};
 			// E-For: C-style for loop
 			// 1. Evaluate init
-		const initNode = nodeMap.get(e.init);
-		if (!initNode) {
-			return {
-				value: errorVal(
-					ErrorCodes.DomainError,
-					"Init node not found: " + e.init,
-				),
-				env: state.env,
-				refCells: state.refCells,
-			};
-		}
-
-		const initResult = evalEIRNode(
-			new Evaluator(registry, defs),
-			initNode,
-			nodeMap,
-			nodeValues,
-			state,
-			registry,
-			effectRegistry,
-			defs,
-			options,
-		);
-
-		if (isError(initResult.value)) {
-			return { value: initResult.value, env: state.env, refCells: state.refCells };
+		let initValue: Value;
+		if (typeof e.init === "string") {
+			// Node ID reference
+			const initNode = nodeMap.get(e.init);
+			if (!initNode) {
+				return {
+					value: errorVal(
+						ErrorCodes.DomainError,
+						"Init node not found: " + e.init,
+					),
+					env: state.env,
+					refCells: state.refCells,
+				};
+			}
+			const initResult = evalEIRNode(
+				new Evaluator(registry, defs),
+				initNode,
+				nodeMap,
+				nodeValues,
+				state,
+				registry,
+				effectRegistry,
+				defs,
+				options,
+			);
+			initValue = initResult.value;
+			if (isError(initValue)) {
+				return { value: initValue, env: state.env, refCells: state.refCells };
+			}
+		} else {
+			// Inline expression
+			initValue = evalExprInline(e.init, state.env, registry, defs, nodeValues);
+			if (isError(initValue)) {
+				return { value: initValue, env: state.env, refCells: state.refCells };
+			}
 		}
 
 		// Bind loop variable
-		let loopEnv = extendValueEnv(state.env, e.var, initResult.value);
+		let loopEnv = extendValueEnv(state.env, e.var, initValue);
 		let loopResult: Value = voidVal();
 
 		for (;;) {
@@ -2692,112 +2749,153 @@ function evalEIRExpr(
 			}
 
 			// 2. Evaluate condition
-			const condNode = nodeMap.get(e.cond);
-			if (!condNode) {
-				return {
-					value: errorVal(
-						ErrorCodes.DomainError,
-						"Condition node not found: " + e.cond,
-					),
-					env: loopEnv,
-					refCells: state.refCells,
-				};
-			}
+			let condValue: Value;
+			if (typeof e.cond === "string") {
+				// Node ID reference
+				const condNode = nodeMap.get(e.cond);
+				if (!condNode) {
+					return {
+						value: errorVal(
+							ErrorCodes.DomainError,
+							"Condition node not found: " + e.cond,
+						),
+						env: loopEnv,
+						refCells: state.refCells,
+					};
+				}
 
-			// Temporarily set environment for condition evaluation
-			const originalEnv = state.env;
-			state.env = loopEnv;
+				// Temporarily set environment for condition evaluation
+				const originalEnv = state.env;
+				state.env = loopEnv;
 
-			const condResult = evalEIRNode(
-				new Evaluator(registry, defs),
-				condNode,
-				nodeMap,
-				nodeValues,
-				state,
-				registry,
-				effectRegistry,
-				defs,
-				options,
-			);
+				const condResult = evalEIRNode(
+					new Evaluator(registry, defs),
+					condNode,
+					nodeMap,
+					nodeValues,
+					state,
+					registry,
+					effectRegistry,
+					defs,
+					options,
+				);
 
-			state.env = originalEnv;
+				state.env = originalEnv;
+				condValue = condResult.value;
 
-			if (isError(condResult.value)) {
-				return { value: condResult.value, env: loopEnv, refCells: state.refCells };
+				if (isError(condValue)) {
+					return { value: condValue, env: loopEnv, refCells: state.refCells };
+				}
+			} else {
+				// Inline expression - evaluate with loopEnv
+				condValue = evalExprInline(e.cond, loopEnv, registry, defs, nodeValues);
+				if (isError(condValue)) {
+					return { value: condValue, env: loopEnv, refCells: state.refCells };
+				}
 			}
 
 			// Check if condition is false - exit loop
-			if (condResult.value.kind !== "bool" || !condResult.value.value) {
+			if (condValue.kind !== "bool" || !condValue.value) {
 				break;
 			}
 
 			// 3. Evaluate body
-			const bodyNode = nodeMap.get(e.body);
-			if (!bodyNode) {
-				return {
-					value: errorVal(
-						ErrorCodes.DomainError,
-						"Body node not found: " + e.body,
-					),
-					env: loopEnv,
-					refCells: state.refCells,
-				};
-			}
+			let bodyValue: Value;
+			if (typeof e.body === "string") {
+				// Node ID reference
+				const bodyNode = nodeMap.get(e.body);
+				if (!bodyNode) {
+					return {
+						value: errorVal(
+							ErrorCodes.DomainError,
+							"Body node not found: " + e.body,
+						),
+						env: loopEnv,
+						refCells: state.refCells,
+					};
+				}
 
-			state.env = loopEnv;
-			const bodyResult = evalEIRNode(
-				new Evaluator(registry, defs),
-				bodyNode,
-				nodeMap,
-				nodeValues,
-				state,
-				registry,
-				effectRegistry,
-				defs,
-				options,
-			);
+				const originalEnv = state.env;
+				state.env = loopEnv;
 
-			if (isError(bodyResult.value)) {
-				return { value: bodyResult.value, env: loopEnv, refCells: state.refCells };
-			}
+				const bodyResult = evalEIRNode(
+					new Evaluator(registry, defs),
+					bodyNode,
+					nodeMap,
+					nodeValues,
+					state,
+					registry,
+					effectRegistry,
+					defs,
+					options,
+				);
 
-			loopResult = bodyResult.value;
-			if (bodyResult.refCells) {
-				state.refCells = bodyResult.refCells;
+				state.env = originalEnv;
+
+				if (isError(bodyResult.value)) {
+					return { value: bodyResult.value, env: loopEnv, refCells: state.refCells };
+				}
+
+				loopResult = bodyResult.value;
+				if (bodyResult.refCells) {
+					state.refCells = bodyResult.refCells;
+				}
+			} else {
+				// Inline expression
+				bodyValue = evalExprInline(e.body, loopEnv, registry, defs, nodeValues);
+				if (isError(bodyValue)) {
+					return { value: bodyValue, env: loopEnv, refCells: state.refCells };
+				}
+				loopResult = bodyValue;
 			}
 
 			// 4. Evaluate update
-			const updateNode = nodeMap.get(e.update);
-			if (!updateNode) {
-				return {
-					value: errorVal(
-						ErrorCodes.DomainError,
-						"Update node not found: " + e.update,
-					),
-					env: loopEnv,
-					refCells: state.refCells,
-				};
-			}
+			let updateValue: Value;
+			if (typeof e.update === "string") {
+				// Node ID reference
+				const updateNode = nodeMap.get(e.update);
+				if (!updateNode) {
+					return {
+						value: errorVal(
+							ErrorCodes.DomainError,
+							"Update node not found: " + e.update,
+						),
+						env: loopEnv,
+						refCells: state.refCells,
+					};
+				}
 
-			const updateResult = evalEIRNode(
-				new Evaluator(registry, defs),
-				updateNode,
-				nodeMap,
-				nodeValues,
-				state,
-				registry,
-				effectRegistry,
-				defs,
-				options,
-			);
+				const originalEnv = state.env;
+				state.env = loopEnv;
 
-			if (isError(updateResult.value)) {
-				return { value: updateResult.value, env: loopEnv, refCells: state.refCells };
+				const updateResult = evalEIRNode(
+					new Evaluator(registry, defs),
+					updateNode,
+					nodeMap,
+					nodeValues,
+					state,
+					registry,
+					effectRegistry,
+					defs,
+					options,
+				);
+
+				state.env = originalEnv;
+				updateValue = updateResult.value;
+
+				if (isError(updateValue)) {
+					return { value: updateValue, env: loopEnv, refCells: state.refCells };
+				}
+			} else {
+				// Inline expression
+				updateValue = evalExprInline(e.update, loopEnv, registry, defs, nodeValues);
+				if (isError(updateValue)) {
+					return { value: updateValue, env: loopEnv, refCells: state.refCells };
+				}
 			}
 
 			// Update loop variable
-			loopEnv = extendValueEnv(loopEnv, e.var, updateResult.value);
-			state.env = originalEnv;
+			loopEnv = extendValueEnv(loopEnv, e.var, updateValue);
 		}
 
 		return {
@@ -2808,44 +2906,54 @@ function evalEIRExpr(
 	}
 
 	case "iter": {
-		const e = expr as unknown as { var: string; iter: string; body: string };
+		const e = expr as unknown as { var: string; iter: string | Expr; body: string | Expr };
 		// E-Iter: Iterate over list/set elements
-		const iterNode = nodeMap.get(e.iter);
-		if (!iterNode) {
-			return {
-				value: errorVal(
-					ErrorCodes.DomainError,
-					"Iter node not found: " + e.iter,
-				),
-				env: state.env,
-				refCells: state.refCells,
-			};
-		}
+		let iterValue: Value;
+		if (typeof e.iter === "string") {
+			// Node ID reference
+			const iterNode = nodeMap.get(e.iter);
+			if (!iterNode) {
+				return {
+					value: errorVal(
+						ErrorCodes.DomainError,
+						"Iter node not found: " + e.iter,
+					),
+					env: state.env,
+					refCells: state.refCells,
+				};
+			}
 
-		const iterResult = evalEIRNode(
-			new Evaluator(registry, defs),
-			iterNode,
-			nodeMap,
-			nodeValues,
-			state,
-			registry,
-			effectRegistry,
-			defs,
-			options,
-		);
-
-		if (isError(iterResult.value)) {
-			return { value: iterResult.value, env: state.env, refCells: state.refCells };
+			const iterResult = evalEIRNode(
+				new Evaluator(registry, defs),
+				iterNode,
+				nodeMap,
+				nodeValues,
+				state,
+				registry,
+				effectRegistry,
+				defs,
+				options,
+			);
+			iterValue = iterResult.value;
+			if (isError(iterValue)) {
+				return { value: iterValue, env: state.env, refCells: state.refCells };
+			}
+		} else {
+			// Inline expression
+			iterValue = evalExprInline(e.iter, state.env, registry, defs, nodeValues);
+			if (isError(iterValue)) {
+				return { value: iterValue, env: state.env, refCells: state.refCells };
+			}
 		}
 
 		// Get elements from list or set
 		let elements: Value[] = [];
-		if (iterResult.value.kind === "list") {
-			elements = iterResult.value.value;
-		} else if (iterResult.value.kind === "set") {
+		if (iterValue.kind === "list") {
+			elements = iterValue.value;
+		} else if (iterValue.kind === "set") {
 			// Set value contains stringified hashes - convert back to values
 			// Hash format: "i:123" for int, "b:true" for bool, "f:3.14" for float, "s:hello" for string
-			elements = Array.from(iterResult.value.value).map((hash) => {
+			elements = Array.from(iterValue.value).map((hash) => {
 				const colonIndex = hash.indexOf(":");
 				if (colonIndex === -1) {
 					return errorVal(ErrorCodes.TypeError, "Invalid hash format: " + hash);
@@ -2870,7 +2978,7 @@ function evalEIRExpr(
 			return {
 				value: errorVal(
 					ErrorCodes.TypeError,
-					"Iter requires list or set, got: " + iterResult.value.kind,
+					"Iter requires list or set, got: " + iterValue.kind,
 				),
 				env: state.env,
 				refCells: state.refCells,
@@ -2892,44 +3000,62 @@ function evalEIRExpr(
 			const loopEnv = extendValueEnv(iterEnv, e.var, elem);
 
 			// Evaluate body
-			const bodyNode = nodeMap.get(e.body);
-			if (!bodyNode) {
-				return {
-					value: errorVal(
-						ErrorCodes.DomainError,
-						"Body node not found: " + e.body,
-					),
-					env: iterEnv,
-					refCells: state.refCells,
-				};
-			}
+			let bodyResultValue: Value;
+			let bodyResultEnv: ValueEnv;
+			let bodyRefCells: typeof state.refCells | undefined;
 
-			const originalEnv = state.env;
-			state.env = loopEnv;
+			if (typeof e.body === "string") {
+				// Node ID reference
+				const bodyNode = nodeMap.get(e.body);
+				if (!bodyNode) {
+					return {
+						value: errorVal(
+							ErrorCodes.DomainError,
+							"Body node not found: " + e.body,
+						),
+						env: iterEnv,
+						refCells: state.refCells,
+					};
+				}
 
-			const bodyResult = evalEIRNode(
-				new Evaluator(registry, defs),
-				bodyNode,
-				nodeMap,
-				nodeValues,
-				state,
-				registry,
-				effectRegistry,
-				defs,
-				options,
-			);
+				const originalEnv = state.env;
+				state.env = loopEnv;
 
-			state.env = originalEnv;
+				const bodyResult = evalEIRNode(
+					new Evaluator(registry, defs),
+					bodyNode,
+					nodeMap,
+					nodeValues,
+					state,
+					registry,
+					effectRegistry,
+					defs,
+					options,
+				);
 
-			if (isError(bodyResult.value)) {
-				return { value: bodyResult.value, env: iterEnv, refCells: state.refCells };
+				state.env = originalEnv;
+
+				if (isError(bodyResult.value)) {
+					return { value: bodyResult.value, env: iterEnv, refCells: state.refCells };
+				}
+
+				bodyResultValue = bodyResult.value;
+				bodyResultEnv = bodyResult.env;
+				bodyRefCells = bodyResult.refCells;
+			} else {
+				// Inline expression
+				bodyResultValue = evalExprInline(e.body, loopEnv, registry, defs, nodeValues);
+				if (isError(bodyResultValue)) {
+					return { value: bodyResultValue, env: iterEnv, refCells: state.refCells };
+				}
+				bodyResultEnv = loopEnv;
 			}
 
 			// Update iterEnv with the result environment (for assign expressions)
-			iterEnv = bodyResult.env;
+			iterEnv = bodyResultEnv;
 
-			if (bodyResult.refCells) {
-				state.refCells = bodyResult.refCells;
+			if (bodyRefCells) {
+				state.refCells = bodyRefCells;
 			}
 		}
 
@@ -2941,7 +3067,7 @@ function evalEIRExpr(
 	}
 
 	case "effect": {
-		const e = expr as unknown as { op: string; args: string[] };
+		const e = expr as unknown as { op: string; args: (string | Expr)[] };
 		// E-Effect: Execute side effect operation
 		const effectOp = lookupEffect(effectRegistry, e.op);
 		if (!effectOp) {
@@ -2957,36 +3083,48 @@ function evalEIRExpr(
 
 		// Evaluate arguments
 		const argValues: Value[] = [];
-		for (const argId of e.args) {
-			const argNode = nodeMap.get(argId);
-			if (!argNode) {
-				return {
-					value: errorVal(
-						ErrorCodes.DomainError,
-						"Argument node not found: " + argId,
-					),
-					env: state.env,
-					refCells: state.refCells,
-				};
+		for (const arg of e.args) {
+			let argValue: Value;
+			if (typeof arg === "string") {
+				// Node ID reference
+				const argNode = nodeMap.get(arg);
+				if (!argNode) {
+					return {
+						value: errorVal(
+							ErrorCodes.DomainError,
+							"Argument node not found: " + arg,
+						),
+						env: state.env,
+						refCells: state.refCells,
+					};
+				}
+
+				const argResult = evalEIRNode(
+					new Evaluator(registry, defs),
+					argNode,
+					nodeMap,
+					nodeValues,
+					state,
+					registry,
+					effectRegistry,
+					defs,
+					options,
+				);
+
+				if (isError(argResult.value)) {
+					return { value: argResult.value, env: state.env, refCells: state.refCells };
+				}
+
+				argValue = argResult.value;
+			} else {
+				// Inline expression
+				argValue = evalExprInline(arg, state.env, registry, defs, nodeValues);
+				if (isError(argValue)) {
+					return { value: argValue, env: state.env, refCells: state.refCells };
+				}
 			}
 
-			const argResult = evalEIRNode(
-				new Evaluator(registry, defs),
-				argNode,
-				nodeMap,
-				nodeValues,
-				state,
-				registry,
-				effectRegistry,
-				defs,
-				options,
-			);
-
-			if (isError(argResult.value)) {
-				return { value: argResult.value, env: state.env, refCells: state.refCells };
-			}
-
-			argValues.push(argResult.value);
+			argValues.push(argValue);
 		}
 
 		// Check arity
@@ -3026,43 +3164,51 @@ function evalEIRExpr(
 
 	case "try": {
 		const e = expr as unknown as {
-			tryBody: string;
+			tryBody: string | Expr;
 			catchParam: string;
-			catchBody: string;
-			fallback?: string;
+			catchBody: string | Expr;
+			fallback?: string | Expr;
 		};
 
-		// Check if tryBody was already evaluated and has a value (or error) in nodeValues
-		const tryNode = nodeMap.get(e.tryBody);
-		if (!tryNode) {
-			return {
-				value: errorVal(ErrorCodes.ValidationError, "Try body node not found: " + e.tryBody),
-				env: state.env,
-				refCells: state.refCells,
-			};
-		}
-
-		// Try to get pre-evaluated value from nodeValues
-		let tryValue = nodeValues.get(e.tryBody);
+		// Evaluate tryBody
+		let tryValue: Value | undefined;
 		let tryRefCells = state.refCells;
 
-		// If not in nodeValues, evaluate it now
-		if (tryValue === undefined) {
-			const tryResult = evalEIRNode(
-				new Evaluator(registry, defs),
-				tryNode,
-				nodeMap,
-				nodeValues,
-				state,
-				registry,
-				effectRegistry,
-				defs,
-				options,
-			);
-			tryValue = tryResult.value;
-			tryRefCells = tryResult.refCells ?? state.refCells;
-			// Store the result for future reference
-			nodeValues.set(e.tryBody, tryValue);
+		if (typeof e.tryBody === "string") {
+			// Node ID reference
+			const tryNode = nodeMap.get(e.tryBody);
+			if (!tryNode) {
+				return {
+					value: errorVal(ErrorCodes.ValidationError, "Try body node not found: " + e.tryBody),
+					env: state.env,
+					refCells: state.refCells,
+				};
+			}
+
+			// Try to get pre-evaluated value from nodeValues
+			tryValue = nodeValues.get(e.tryBody);
+
+			// If not in nodeValues, evaluate it now
+			if (tryValue === undefined) {
+				const tryResult = evalEIRNode(
+					new Evaluator(registry, defs),
+					tryNode,
+					nodeMap,
+					nodeValues,
+					state,
+					registry,
+					effectRegistry,
+					defs,
+					options,
+				);
+				tryValue = tryResult.value;
+				tryRefCells = tryResult.refCells ?? state.refCells;
+				// Store the result for future reference
+				nodeValues.set(e.tryBody, tryValue);
+			}
+		} else {
+			// Inline expression - evaluate directly
+			tryValue = evalExprInline(e.tryBody, state.env, registry, defs, nodeValues);
 		}
 
 		// Check if error occurred
@@ -3075,54 +3221,74 @@ function evalEIRExpr(
 				refCells: tryRefCells,
 			};
 
-			const catchNode = nodeMap.get(e.catchBody);
-			if (!catchNode) {
-				return {
-					value: errorVal(ErrorCodes.ValidationError, "Catch body node not found: " + e.catchBody),
-					env: state.env,
-					refCells: state.refCells,
-				};
+			let catchValue: Value;
+			if (typeof e.catchBody === "string") {
+				// Node ID reference
+				const catchNode = nodeMap.get(e.catchBody);
+				if (!catchNode) {
+					return {
+						value: errorVal(ErrorCodes.ValidationError, "Catch body node not found: " + e.catchBody),
+						env: state.env,
+						refCells: state.refCells,
+					};
+				}
+
+				const catchResult = evalEIRNode(
+					new Evaluator(registry, defs),
+					catchNode,
+					nodeMap,
+					nodeValues,
+					catchState,
+					registry,
+					effectRegistry,
+					defs,
+					options,
+				);
+				catchValue = catchResult.value;
+			} else {
+				// Inline expression
+				catchValue = evalExprInline(e.catchBody, catchEnv, registry, defs, nodeValues);
 			}
 
-			return evalEIRNode(
-				new Evaluator(registry, defs),
-				catchNode,
-				nodeMap,
-				nodeValues,
-				catchState,
-				registry,
-				effectRegistry,
-				defs,
-				options,
-			);
+			return { value: catchValue, env: catchState.env, refCells: catchState.refCells };
 		}
 
 		// SUCCESS PATH
 		if (e.fallback) {
 			// Has fallback - evaluate it
-			const fallbackNode = nodeMap.get(e.fallback);
-			if (!fallbackNode) {
-				return {
-					value: errorVal(ErrorCodes.ValidationError, "Fallback node not found: " + e.fallback),
-					env: state.env,
-					refCells: state.refCells,
-				};
+			let fallbackValue: Value;
+			if (typeof e.fallback === "string") {
+				// Node ID reference
+				const fallbackNode = nodeMap.get(e.fallback);
+				if (!fallbackNode) {
+					return {
+						value: errorVal(ErrorCodes.ValidationError, "Fallback node not found: " + e.fallback),
+						env: state.env,
+						refCells: state.refCells,
+					};
+				}
+
+				// Update state from try evaluation
+				state.refCells = tryRefCells;
+
+				const fallbackResult = evalEIRNode(
+					new Evaluator(registry, defs),
+					fallbackNode,
+					nodeMap,
+					nodeValues,
+					state,
+					registry,
+					effectRegistry,
+					defs,
+					options,
+				);
+				fallbackValue = fallbackResult.value;
+			} else {
+				// Inline expression
+				fallbackValue = evalExprInline(e.fallback, state.env, registry, defs, nodeValues);
 			}
 
-			// Update state from try evaluation
-			state.refCells = tryRefCells;
-
-			return evalEIRNode(
-				new Evaluator(registry, defs),
-				fallbackNode,
-				nodeMap,
-				nodeValues,
-				state,
-				registry,
-				effectRegistry,
-				defs,
-				options,
-			);
+			return { value: fallbackValue, env: state.env, refCells: tryRefCells };
 		}
 
 		// No fallback - return tryBody result
