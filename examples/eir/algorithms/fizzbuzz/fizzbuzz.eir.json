@@ -1,0 +1,227 @@
+{
+  "$schema": "https://raw.githubusercontent.com/Mearman/SPIRAL/main/eir.schema.json",
+  "version": "1.0.0",
+  "description": "Complete FizzBuzz for 1-15. Returns list of strings: 'FizzBuzz' for multiples of 15, 'Fizz' for 3, 'Buzz' for 5, otherwise the number as string.",
+  "airDefs": [
+    {
+      "ns": "core",
+      "name": "mod",
+      "params": ["a", "b"],
+      "result": { "kind": "int" },
+      "body": { "kind": "ref", "id": "a" }
+    },
+    {
+      "ns": "core",
+      "name": "add",
+      "params": ["a", "b"],
+      "result": { "kind": "int" },
+      "body": { "kind": "ref", "id": "a" }
+    },
+    {
+      "ns": "core",
+      "name": "eq",
+      "params": ["a", "b"],
+      "result": { "kind": "bool" },
+      "body": { "kind": "ref", "id": "a" }
+    },
+    {
+      "ns": "core",
+      "name": "gt",
+      "params": ["a", "b"],
+      "result": { "kind": "bool" },
+      "body": { "kind": "ref", "id": "a" }
+    },
+    {
+      "ns": "list",
+      "name": "cons",
+      "params": ["x", "xs"],
+      "result": { "kind": "list", "of": { "kind": "string" } },
+      "body": { "kind": "ref", "id": "xs" }
+    }
+  ],
+  "nodes": [
+    { "id": "zero", "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 0 }},
+    { "id": "one", "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 1 }},
+    { "id": "three", "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 3 }},
+    { "id": "five", "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 5 }},
+    { "id": "fifteen", "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 15 }},
+    { "id": "n", "expr": { "kind": "lit", "type": { "kind": "int" }, "value": 15 }},
+    { "id": "emptyList", "expr": { "kind": "lit", "type": { "kind": "list", "of": { "kind": "string" }}, "value": [] }},
+    { "id": "initI", "expr": { "kind": "assign", "target": "i", "value": "one" }},
+    { "id": "initResult", "expr": { "kind": "assign", "target": "result", "value": "emptyList" }},
+    {
+      "id": "loopCond",
+      "expr": {
+        "kind": "call",
+        "ns": "core",
+        "name": "gt",
+        "args": ["n", "i"]
+      }
+    },
+    {
+      "id": "mod15Result",
+      "expr": {
+        "kind": "call",
+        "ns": "core",
+        "name": "mod",
+        "args": ["i", "fifteen"]
+      }
+    },
+    {
+      "id": "isMult15",
+      "expr": {
+        "kind": "call",
+        "ns": "core",
+        "name": "eq",
+        "args": ["mod15Result", "zero"]
+      }
+    },
+    {
+      "id": "mod3Result",
+      "expr": {
+        "kind": "call",
+        "ns": "core",
+        "name": "mod",
+        "args": ["i", "three"]
+      }
+    },
+    {
+      "id": "isMult3",
+      "expr": {
+        "kind": "call",
+        "ns": "core",
+        "name": "eq",
+        "args": ["mod3Result", "zero"]
+      }
+    },
+    {
+      "id": "mod5Result",
+      "expr": {
+        "kind": "call",
+        "ns": "core",
+        "name": "mod",
+        "args": ["i", "five"]
+      }
+    },
+    {
+      "id": "isMult5",
+      "expr": {
+        "kind": "call",
+        "ns": "core",
+        "name": "eq",
+        "args": ["mod5Result", "zero"]
+      }
+    },
+    {
+      "id": "fizzBuzzLiteral",
+      "expr": { "kind": "lit", "type": { "kind": "string" }, "value": "FizzBuzz" }
+    },
+    {
+      "id": "fizzLiteral",
+      "expr": { "kind": "lit", "type": { "kind": "string" }, "value": "Fizz" }
+    },
+    {
+      "id": "buzzLiteral",
+      "expr": { "kind": "lit", "type": { "kind": "string" }, "value": "Buzz" }
+    },
+    {
+      "id": "oneLiteral",
+      "expr": { "kind": "lit", "type": { "kind": "string" }, "value": "1" }
+    },
+    {
+      "id": "checkBuzz",
+      "expr": {
+        "kind": "if",
+        "cond": "isMult5",
+        "then": "buzzLiteral",
+        "else": "oneLiteral",
+        "type": { "kind": "string" }
+      }
+    },
+    {
+      "id": "checkFizz",
+      "expr": {
+        "kind": "if",
+        "cond": "isMult3",
+        "then": "fizzLiteral",
+        "else": "checkBuzz",
+        "type": { "kind": "string" }
+      }
+    },
+    {
+      "id": "fizzBuzzValue",
+      "expr": {
+        "kind": "if",
+        "cond": "isMult15",
+        "then": "fizzBuzzLiteral",
+        "else": "checkFizz",
+        "type": { "kind": "string" }
+      }
+    },
+    {
+      "id": "newResult",
+      "expr": {
+        "kind": "call",
+        "ns": "list",
+        "name": "cons",
+        "args": ["fizzBuzzValue", "result"]
+      }
+    },
+    {
+      "id": "incremented",
+      "expr": {
+        "kind": "call",
+        "ns": "core",
+        "name": "add",
+        "args": ["i", "one"]
+      }
+    },
+    {
+      "id": "updateI",
+      "expr": {
+        "kind": "assign",
+        "target": "i",
+        "value": "incremented"
+      }
+    },
+    {
+      "id": "updateResult",
+      "expr": {
+        "kind": "assign",
+        "target": "result",
+        "value": "newResult"
+      }
+    },
+    {
+      "id": "loopBody",
+      "expr": {
+        "kind": "seq",
+        "first": "updateResult",
+        "then": "updateI"
+      }
+    },
+    {
+      "id": "whileLoop",
+      "expr": {
+        "kind": "while",
+        "cond": "loopCond",
+        "body": "loopBody"
+      }
+    },
+    {
+      "id": "finalResult",
+      "expr": {
+        "kind": "var",
+        "name": "result"
+      }
+    },
+    {
+      "id": "output",
+      "expr": {
+        "kind": "ref",
+        "id": "finalResult"
+      }
+    }
+  ],
+  "result": "output"
+}
